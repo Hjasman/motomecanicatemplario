@@ -1,0 +1,27 @@
+(function ($, APP) {
+    APP.regExtension({
+        name: 'change-menu-styles',
+        events: {
+            load: function () {
+                var _this = this;
+                var set = function(styles, selector, prop, value){
+                  if (!styles[selector]) styles[selector] = {};
+                  if (typeof prop == 'object') {
+                    for (var k in prop) {
+                      styles[selector][k] = prop[k];
+                    }
+                  } else {
+                    styles[selector][prop] = value;
+                  }
+                };
+
+                _this.Core.addFilter('cleanHTMLplease', function($html) {
+                    $html.find('.navbar-dropdown .nav').attr('id', 'exCollapsingNavbar');
+                    return $html;
+                });
+
+            }
+        }
+    });
+} (jQuery, mbrApp));
+//# sourceMappingURL=menu-styles.js.map

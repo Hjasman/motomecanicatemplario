@@ -1,0 +1,21 @@
+(function($, APP) {
+    APP.regExtension({
+        name: 'gallery',
+        events: {
+            load: function() {
+                var _this = this;
+
+                $(document).on('sortstop', function(event) {
+                    var componentId = $(event.target).closest('#edit-component-params').attr('data-component-id');
+                    _this.Core.$body.find('.app-component[data-app-component-id="' + componentId + '"] .mbr-gallery').trigger('change.cards');
+                });
+
+                _this.Core.addFilter('changeComponentParams', function(value, paramName, params, id) {
+                    return value;
+                });
+            }
+        }
+    });
+}(jQuery, mbrApp));
+
+//# sourceMappingURL=gallery.js.map

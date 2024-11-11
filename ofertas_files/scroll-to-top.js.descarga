@@ -1,0 +1,44 @@
+(function($, APP) {
+    APP.regExtension({
+        name: 'scrollToTop',
+        global: {
+            scrollToTop: (function() {
+                APP.$template.find('body').append('<div class="scrollToTop_wraper"><div id="scrollToTop" class="scrollToTop mbr-arrow-up"><a style="text-align: center;"><i' + (APP.theme.name === 'mobirise3' ? ' class="mbr-arrow-up-icon"' : '') + '></i></a></div></div>');
+
+                var $scroller = APP.$template.find('#scrollToTop'),
+                    $main = APP.$template.find('body,html');
+
+                APP.$template.scroll(function() {
+                    if ($(this).scrollTop() > 0) {
+                        $scroller.fadeIn();
+                    } else {
+                        $scroller.fadeOut();
+                    }
+                });
+
+                $scroller.click(function() {
+                    $main.animate({
+                        scrollTop: 0
+                    }, 400);
+
+                    return false;
+                });
+            })()
+        },
+        events: {
+            load: function() {
+                var _this = this;
+
+                _this.addFilter('publishHTML', function(html) {
+                    if (APP.getThemeSettings('isScrollToTopButton')) {
+                        return html.replace('</body>', ' <div id="scrollToTop" class="scrollToTop mbr-arrow-up"><a style="text-align: center;"><i' + (APP.theme.name === 'mobirise3' ? ' class="mbr-arrow-up-icon"' : '') + '></i></a></div>\n  </body>');
+                    }
+
+                    return html;
+                });
+            }
+        }
+    });
+}(jQuery, mbrApp));
+
+//# sourceMappingURL=scroll-to-top.js.map

@@ -1,0 +1,53 @@
+(function($, APP) {
+    'use strict';
+
+    APP.regExtension({
+        name: 'change-testimonials',
+        events: {
+            load: function() {
+                var _this = this;
+
+                _this.Core.addFilter('changeComponentParams', function(value, paramName, params, id) {
+
+                    if (paramName === 'testimonialsCount') {
+                        var $testimonials = APP.$template.find('[data-app-component-id=' + id + '] > .app-component-content .mbr-testimonials-list');
+                        var component = APP.Core.getComponent(id);
+                        var items = component.items;
+                        var defaultItem = component.defaultItem;
+
+                        var testimonials = [];
+
+                        for (var i = 0; i < value; i++) {
+                            testimonials[i] = component.testimonial[i] || $.extend(true, {}, defaultItem, items[i] || {});
+                        }
+
+                        component.testimonial = testimonials;
+
+                        $testimonials.find('.mbr-testimonial [mbr-media]:not([click-attached])').on('click', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+
+                            var testimonialIndex = $(this).closest('.mbr-testimonial').index();
+                            var item = component.testimonial[testimonialIndex];
+
+                            var media = $.extend(true, {}, item.media);
+
+                            function saveMedia(media) {
+                                item.media = media;
+                                APP.Core.updateGlobalComponents(component._id);
+                            }
+
+                            APP.showMediaImageDialog(media, saveMedia);
+                        }).each(function(index, el) {
+                            $(el).attr('click-attached', 'true');
+                        });
+                    }
+
+                    return value;
+                });
+            }
+        }
+    });
+}(jQuery, mbrApp));
+
+//# sourceMappingURL=testimonials.js.map

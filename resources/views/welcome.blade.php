@@ -41,13 +41,17 @@
                 <div class="sm:fixed sm:top-0 sm:right-0 p-6 text-right z-10">
                     
                     @auth
+                        <a href="" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Home &nbsp&nbsp&nbsp/</a>
+                        <a href="#footer-4-udDoRr24HO" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Contacto &nbsp&nbsp&nbsp/</a>
                         <a href="#sobre" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Sobre Nosotros &nbsp&nbsp&nbsp/</a>
-                        <a href="" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"> Promociones&nbsp&nbsp&nbsp/</a>
-                        <a href="{{ url('/home') }}" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Sigest</a>
-                        
+                        <a href="ofertas" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"> Ofertas&nbsp&nbsp&nbsp/</a>
+                        <a href="{{ url('/home') }}" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">SigestCRM</a>
+                   
                     @else
+                        <a href="" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Home &nbsp&nbsp&nbsp/</a>
+                        <a href="#footer-4-udDoRr24HO" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Contacto &nbsp&nbsp&nbsp/</a>
                         <a href="#sobre" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Sobre Nosotros &nbsp&nbsp&nbsp/</a>
-                        <a href="" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"> Promociones&nbsp&nbsp&nbsp/</a>
+                        <a href="ofertas" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500"> Ofertas&nbsp&nbsp&nbsp/</a>
                         <a href="{{ route('login') }}" class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Log in</a> 
                         
                     @endauth
@@ -303,6 +307,7 @@
               
               <section data-bs-version="5.1" class="social05 cid-udDoRr1RMb" id="follow-us-2-udDoRr1RMb">
             </section>
+            
               <section data-bs-version="5.1" class="contacts02 map1 cid-udDoRr2ztU" id="contacts-2-udDoRr2ztU">
  
                   <div class="container">
@@ -354,6 +359,7 @@
                   </div>
 
               
+              </section>
               <section data-bs-version="5.1" class="footer3 cid-udDoRr24HO" once="footers" id="footer-4-udDoRr24HO">
               
                   <div class="container">

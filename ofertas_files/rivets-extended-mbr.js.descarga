@@ -1,0 +1,477 @@
+/**
+ * @module rivets-extension
+ *
+ * @description
+ * Rivets extension
+ * About Rivets library see {@link http://rivetsjs.com/docs/reference/}
+ *
+ * extend rivets with next entity
+ *
+ * BINDERS:
+ *     opacity
+ *     add-class
+ *     bg-image
+ *     bg-color
+ *     bg-video
+ *     pure-media
+ *     media
+ *     video
+ *     show-if
+ *     show-unless
+ *     show-if
+ *     show-unless
+ *     if
+ *     unless
+ *     content-edit
+ *
+ */
+(function($) {
+    /* Video parser */
+    function videoParser(el, url, remove) {
+        var bgVideoPreviewClass = 'mbr-background-video-preview';
+
+        function setImg($item, src) {
+          var isImg = $item.prop("tagName") == 'IMG';
+
+          if(isImg) {
+            $item.attr('src', src);
+            var $wrap = $item.parents('.app-video-wrapper:eq(0)');
+
+            // add wrapper with video icon
+            if(!/no-video/g.test(src)) {
+              if(!$wrap.length)
+                $item.wrap('<div class="app-video-wrapper">');
+            } else {
+              if($wrap.length)
+                $item.unwrap();
+            }
+          } else {
+            $img = $item.find('.' + bgVideoPreviewClass);
+
+            // use <img> for preview for background video
+            if (!$img.length){
+                $img = $('<div class="' + bgVideoPreviewClass + '">')
+                        .css({
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center'
+                        });
+                $item.find('> *:eq(0)').before($img);
+            }
+            $img.css('background-image', 'url("' + src + '")');
+          }
+        }
+
+        function unsetImg($item) {
+          var isImg = $item.prop("tagName") == 'IMG';
+
+          if(isImg) {
+          } else {
+            // use <img> for preview for background video
+            $item.find('.' + bgVideoPreviewClass).remove();
+          }
+        }
+
+        var $block = $(el);
+
+        // remove image if video disabled
+        if(remove) {
+            unsetImg($block)
+            return;
+        }
+
+          var noVideoURL = 'images/no-video.jpg';
+          var defaultVideoURL = 'images/video-placeholder.jpg';
+
+          // parse string and get working URL
+          // youtube
+          var parsedUrl = url.match(/(http:|https:|)\/\/(player.|www.)?(vimeo\.com|youtu(be\.com|\.be|be\.googleapis\.com))\/(shorts\/|video\/|embed\/|watch\?v=|v\/)?([A-Za-z0-9._%-]*)(\&\S+)?/);
+
+          if (parsedUrl && /youtube/g.test(parsedUrl[3])) {
+            var $tempImg = $('<img>');
+            $tempImg.on('load', function() {
+              if ((this.naturalWidth || this.width) == 120){
+
+                // selection of preview in the best quality
+                var file = this.src.split('/').pop();
+                switch (file){
+                  case 'maxresdefault.jpg':
+                    this.src = this.src.replace(file, 'sddefault.jpg');
+                    break;
+                  case 'sddefault.jpg':
+                    this.src = this.src.replace(file, 'hqdefault.jpg');
+                    break;
+                  default: // image not found
+                    setImg($block, noVideoURL);
+                    $tempImg.remove();
+                    break;
+                }
+
+              } else {
+                setImg($block, this.src);
+                $tempImg.remove();
+              }
+            });
+            $tempImg.attr('src', 'http://img.youtube.com/vi/' + parsedUrl[6] + '/maxresdefault.jpg');
+          }
+
+          // vimeo
+          else if(parsedUrl && /vimeo/g.test(parsedUrl[3])) {
+            $.ajax({
+                type:'GET',
+                url: 'http://vimeo.com/api/v2/video/' + parsedUrl[6] + '.json',
+                dataType: 'json',
+                success: function(data){
+                  setImg($block, data[0].thumbnail_large);
+                },
+                error: function() {
+                  setImg($block, noVideoURL);
+                }
+            });
+          }
+
+          else {
+            setImg($block, defaultVideoURL);
+          }
+    }
+
+
+    /* Extensions for Revets from Mobirise */
+    rivets.configure({
+        // Attribute prefix in templates
+        prefix: 'mbr',
+
+        // Preload templates with initial data on bind
+        preloadData: true,
+
+        // Root sightglass interface for keypaths
+        rootInterface: '.',
+
+        // Template delimiters for text bindings
+        templateDelimiters: ['{', '}'],
+
+        // Augment the event handler of the on-* binder
+        handler: function(target, event, binding) {
+            this.call(target, event, binding.view.models)
+        }
+    })
+
+
+    /*
+       ----------------
+          FORMATTERS
+       ----------------
+    */
+    rivets.formatters.if = function(value, condition) {
+        return condition ? value : false;
+    };
+    rivets.formatters.unless = function(value, condition) {
+        return !condition ? value : false;
+    };
+
+    // if default value not exist - use additional instead
+    rivets.formatters.else = function(value, additional) {
+        return value || additional;
+    };
+    // varname | pref 'pr-'
+    // varname => pr-varname
+    rivets.formatters.pref = function(value, pref, cond) {
+        if(typeof cond === 'undefined') cond = true;
+        return (cond ? pref + '' : '') + value;
+    };
+    rivets.formatters['!pref'] = function(value, pref, cond) {
+        if(typeof cond === 'undefined') cond = true;
+        cond = !cond;
+        return (cond ? pref + '' : '') + value;
+    };
+    // varname | suff '-su'
+    // varname => varname-su
+    rivets.formatters.suff = function(value, suff, cond) {
+        if(typeof cond === 'undefined') cond = true;
+        return value + (cond ? '' + suff : '');
+    };
+    rivets.formatters['!suff'] = function(value, suff, cond) {
+        if(typeof cond === 'undefined') cond = true;
+        cond = !cond;
+        return value + (cond ? '' + suff : '');
+    };
+    // varname | eq 4
+    // varname == 4
+    rivets.formatters.eq = function (value, args) {
+        return value == args;
+    };
+    // varname | not_eq 4
+    // varname != 4
+    rivets.formatters.not_eq = function (value, args) {
+        return value != args;
+    };
+    // varname | gt 4
+    // varname > 4
+    rivets.formatters.gt = function(value, arg) {
+        return value > arg;
+    };
+    // varname | gte 4
+    // varname >= 4
+    rivets.formatters.gte = function(value, arg) {
+        return value >= arg;
+    };
+    // varname | lt 4
+    // varname < 4
+    rivets.formatters.lt = function(value, arg) {
+        return value < arg;
+    };
+    // varname | lte 4
+    // varname <= 4
+    rivets.formatters.lte = function(value, arg) {
+        return value <= arg;
+    };
+    // varname | / 4
+    // varname / 4
+    rivets.formatters['/'] = function(value, arg) {
+        if(!isNaN(Number(value)) && !isNaN(Number(arg))) {
+            if(arg == 0) {
+                return 'infinite';
+            }
+
+            return Number(value) / Number(arg);
+        }
+        return value;
+    };
+    // varname | * 4
+    // varname * 4
+    rivets.formatters['*'] = function(value, arg) {
+        if(!isNaN(Number(value)) && !isNaN(Number(arg))) {
+            return Number(value) * Number(arg);
+        }
+        return value;
+    };
+
+
+    /*
+       ----------------
+          BINDERS
+       ----------------
+    */
+    rivets.binders.opacity = function(el, value) {
+        el.style.opacity = value;
+    };
+    rivets.binders['add-class'] = function(el, value) {
+        if(el.addedClass) {
+            $(el).removeClass(el.addedClass);
+            delete el.addedClass;
+        }
+
+        if(value) {
+            $(el).addClass(value);
+            el.addedClass = value;
+        }
+    };
+    rivets.binders['bg-image'] = function(el, value) {
+        if(value) {
+            el.style.backgroundImage = 'url(\'' + value + '\')';
+            el.style.backgroundColor = '';
+        } else {
+            el.style.backgroundImage = '';
+        }
+    };
+    rivets.binders['bg-color'] = function(el, value) {
+        if(value) {
+            el.style.backgroundColor = value;
+            el.style.backgroundImage = '';
+        } else {
+            el.style.backgroundColor = '';
+        }
+    };
+    rivets.binders['bg-video'] = function(el, value) {
+        el[(value?'set':'remove') + 'Attribute']('data-video-src', value);
+        var publish = this.view.models._checkPublish();
+
+        if(!publish) {
+            videoParser(el, value ? value.url || value : value, !value);
+        }
+    };
+    rivets.binders['pure-media'] = function(el, value) {
+        for(var k in value) {
+            var data = value[k];
+            if(data.active) {
+                if(k == 'image') {
+                    var img = $(el);
+
+                    // convert to image
+                    if (!/^img$/i.test(el.tagName))
+                    {
+                        el = $(el.outerHTML.replace(/^<[^\s]+/,"<IMG")).get(0);
+                        img.replaceWith(el);
+                        img = $(el);
+                    }
+
+                    var a = $(el).parents("a");
+                    // if no link but need
+                    if (data.link && !a.length){
+                        a = $("<a href='#'>" + el.outerHTML + "</a>");
+                        img.replaceWith(a);
+                        img = a.find("img");
+                        a.addClass(img.attr("class")); // move class to new Anchor
+                        img.attr("class","");
+                    }
+
+                    if (data.class) img.addClass(data.class);
+                    img.attr("src", data.src);
+                    img.attr("alt", data.alt);
+                    img.attr("title", data.title);
+                    a.attr("href", data.link);
+                    a.attr("target", data.linkInNewWindow ? '_blank' : '');
+                }
+            }
+        }
+    };
+    rivets.binders['media'] = function routine(el, value) {
+        if(!value) {
+            return;
+        }
+        for(var k in value) {
+            var data = value[k];
+            if(data.active) {
+                if(k == 'image') {
+                    var resultTag = '<img src="' + data.src + '"';
+
+                    if(data.class) {
+                        resultTag += ' class="' + data.class + '"';
+                    }
+                    if(data.alt) {
+                        resultTag += ' alt="' + data.alt + '"';
+                    }
+                    if(data.title) {
+                        resultTag += ' title="' + data.title + '"';
+                    }
+
+                    resultTag += ' />';
+
+                    if(data.link) {
+                        resultTag = '<a href="' + data.link + '" ' + (data.linkInNewWindow ? 'target="_blank"' : '') + '>' + resultTag + '</a>';
+                    }
+
+                    $(el).html(resultTag);
+
+                } else if(k == 'video') {
+                    var $resultTag = $('<img src="images/video-placeholder.jpg" class="mbr-figure__img" alt="">');
+
+                    var src = data.src;
+
+                    // parse string and get working URL
+                    // youtube
+                    var youtube_id = src.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+                    var nocookie = src.includes('nocookie');
+                    var dnt = src.includes('dnt');
+                    var youtube_id_length = youtube_id?(youtube_id[ youtube_id[2] == 'embed/' ? 3 : 2 ].length == 11):0;
+                    var vimeo_id = src.match(/https?:\/\/(?:www\.)?vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|)(\d+)(?:$|\/|\?)/);
+                    if (youtube_id && youtube_id_length) {
+                        src = 'https://www.youtube' + (nocookie ? '-nocookie' : '') + '.com/embed/' + youtube_id[2] + '?rel=0&amp;' + (data.autoplay ? 'mute=1' : '') + '&showinfo=0&autoplay=' + (data.autoplay?1:0) + '&loop=' + (data.loop? 1 + "&playlist=" + youtube_id[2] : 0);
+                    }
+
+                    // vimeo
+                    else if(vimeo_id && vimeo_id[3]) {
+                        src = 'https://player.vimeo.com/video/' + vimeo_id[3] + '?autoplay=' + (data.autoplay?1:0) + '&loop=' + (data.loop?1:0) + (dnt?'dnt=1':'');
+                    }
+
+                    $resultTag.attr('data-video-src', src);
+                    $resultTag.attr('data-video-width', data.aspectratio=='4:3'?800:1280);
+                    $resultTag.attr('data-video-height', data.aspectratio=='4:3'?600:720);
+                    $resultTag.attr('data-video-aspectratio', data.aspectratio);
+                    $resultTag.attr('data-video-autoplay', data.autoplay);
+                    $resultTag.attr('data-video-loop', data.loop);
+                    $resultTag.attr('class', data.class);
+                    $(el).html($resultTag);
+
+                    var publish = this.view.models._checkPublish();
+                    videoParser($resultTag[0], src, publish);
+
+                } else if (k == "iconFont") {
+                    // linked with builder-plugin-iconfont-editor.js app-plugin-iconfont.js
+                    $(el).html(mbrAppCore.APP.createIconFont(value.iconFont));
+                }
+
+                return;
+            }
+        }
+
+        // fix if nothing selected
+        if(value.image && typeof value.image === 'object') {
+            value.image.active = true;
+            routine.call(this, el, value);
+        }
+    };
+    rivets.binders['video'] = function(el, value) {
+        if(value) {
+            var publish = this.view.models._checkPublish();
+            $(el).attr('data-data-video-src', value.url);
+            $(el).attr('data-app-width', value.width);
+            $(el).attr('data-app-height', value.height);
+            videoParser(el, value.url, publish);
+        }
+    };
+
+    rivets.binders['show-if'] = rivets.binders['if'];
+    rivets.binders['show-unless'] = rivets.binders['unless'];
+    rivets.binders['show-if'].block = false;
+    rivets.binders['show-unless'].block = false;
+
+    // REWRITTEN if and unless binders... Hide item instead remove
+    // default binders buggy with content-edit binder
+    // added data-app-remove-it attribute to hidden item (removed on publish)
+	// see mbrCoreApp.cleanHTMLplease() too
+    rivets.binders['if'] = function(el, value) {
+        $(el)[value?'removeAttr':'attr']('data-app-remove-it', 'true');
+        return el.style.display = value ? '' : 'none';
+    };
+    rivets.binders['unless'] = function(el, value) {
+        return rivets.binders['if'](el, !value);
+    };
+
+    /* binder for content editable areas */
+    rivets.binders['content-edit'] = {
+        bind: function(el) {
+            var self = this;
+            var subItems = '';
+            var timeout;
+            this.callback = function(e) {
+                // timeout - fix blur + delete events collision
+                clearTimeout(timeout);
+                timeout = setTimeout(function() {
+                    // prevent change
+                    // - related target in same parent node with button
+                    // - related target is link dialog
+                    if(e.isDefaultPrevented()) return;
+                    if(e.type !== 'delete' && e.relatedTarget) {
+                        var isButton =  subItems && $(e.relatedTarget).parents().is(el);
+                        var isLinkDialog = $(e.relatedTarget).parents('.note-mbr-link-dialog:eq(0)').length;
+
+                        if(isButton || isLinkDialog) return;
+                    }
+
+                    var inner = el.innerHTML;
+                    if(subItems) {
+                        inner = mbrAppCore.cleanHTMLplease(inner, true);
+                    }
+
+                    self.observer.setValue(inner);
+
+                    mbrAppCore.fire('rivetsBlur', el);
+                }, 0);
+            }
+
+            if($(el).is('[data-app-edit="buttons"]') || $(el).is('[data-app-edit="menu"]')) {
+                subItems = '[data-app-btn]';
+            }
+            setTimeout(function() {
+                $(el).on('blur.rivets', subItems, self.callback);
+                if(subItems) {
+                    $(el).on('delete.rivets', self.callback);
+                }
+            }, 0);
+        },
+        unbind: function(el) {
+            $(el).off('.rivets', this.callback);
+        }
+    }
+}(jQuery));
+//# sourceMappingURL=rivets-extended-mbr.js.map

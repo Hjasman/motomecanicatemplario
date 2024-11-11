@@ -14,9 +14,9 @@
     </div>
     <div class="mt-3 input-group">
         <span class="input-group-text bg-primary">Nombre:</span>
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="Rodrigo " class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="Salinas" class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="Ardaya" class="form-control col-sm-2 " >
         <span class="input-group-text bg-primary">Celular</span>
         <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
     </div> 
@@ -25,13 +25,13 @@
     </div>
     <div class="mt-3 input-group">
         <span class="input-group-text bg-primary">Placa:</span>
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="2585JHJ" class="form-control col-sm-2 " >
         <span class="input-group-text bg-primary">Color:</span>
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="Azul" class="form-control col-sm-2 " >
         <span class="input-group-text bg-primary">Marca:</span>
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="Honda" class="form-control col-sm-2 " >
         <span class="input-group-text bg-primary">Modelo:</span>
-        <input type="text" required name="cel" value="" class="form-control col-sm-2 " >
+        <input type="text" required name="cel" value="rebel250" class="form-control col-sm-2 " >
     </div>  
     <div class="mt-3 input-group">
         <div class="form-group row w-75">
@@ -46,7 +46,7 @@
 
     <div class="d-grid gap-2 d-md-flex justify-content-center">
         <a class="btn btn-danger  me-md-2" href="{{route('solicitud.mostar')}}">Guardar</a>
-        <a class="btn btn-success me-md-2" href="{{route('home')}}">Cancelar</a>
+        <a class="btn btn-success me-md-2" href="{{route('solicitud.mostar')}}">Cancelar</a>
     
     </div>
 

@@ -93,7 +93,7 @@
 </div>
 <br>
 <div class="d-grid gap-2 d-md-flex justify-content-center">
-    <a class="btn btn-danger  me-md-2" href="{{route('solicitud.llenasol')}}">Nueva Solicitud</a>
+    <a class="btn btn-danger  me-md-2" href="{{route('solicitud.llenasol')}}">Requiere Solicitud</a>
     <a class="btn btn-success me-md-2" href="{{route('home')}}">Terminar</a>
 
 </div>

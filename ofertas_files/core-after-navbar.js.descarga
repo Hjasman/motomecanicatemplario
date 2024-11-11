@@ -1,0 +1,61 @@
+(function($, APP) {
+
+    APP.regExtension({
+        name: 'core-accordion-bootstrap',
+        global: {
+          /**
+             * Add class name .mbr-after-navbar for first item after navbar
+             */
+            setComponentsAfterNavbar: function(page, instance) {
+                page = page || this.currentPage;
+                instance = instance || this.$template;
+
+                // check if there is navbar on the page and get first component on the page
+                // - Why check it in loop???
+                // - Because the menu component is not necessarily placed in the beginning of the list.
+                var navbarID = undefined;
+                for(var k in this.resultJSON[page].components) {
+                    var component = this.resultJSON[page].components[k];
+                    if(component._group === 'Menu' && component._positionAbsolute) {
+                        navbarID = component._id;
+                    }
+                }
+
+                var $firstComponent = instance.find('[data-app-component-id]:not([data-app-component-id=' + navbarID + '])').filter(':first');
+                var firstComponent = this.getComponent($firstComponent.attr('data-app-component-id'));
+
+                // add class .mbr-after-navbar to first component on the page and remove it from other (or remove it from all components if there is no menu on the page)
+                if(typeof navbarID !== 'undefined' && typeof firstComponent !== 'undefined') {
+                    var selector = '> *';
+                    if(typeof firstComponent._afterNavbarItem !== 'undefined') {
+                        selector = firstComponent._afterNavbarItem;
+                    }
+                    if(selector) {
+                        $firstComponent = $firstComponent.find('.app-component-content ' + selector);
+                    } else {
+                        $firstComponent = [];
+                    }
+                    if($firstComponent.length && !$firstComponent.hasClass('mbr-after-navbar')) {
+                        instance.find('.mbr-after-navbar').removeClass('mbr-after-navbar');
+                        $firstComponent.addClass('mbr-after-navbar');
+                    }
+                } else {
+                    instance.find('.mbr-after-navbar').removeClass('mbr-after-navbar');
+                }
+            }
+        },
+        events: {
+            loadedComponent: function(component, page, context, publish) {
+              this.setComponentsAfterNavbar(page, context);
+            },
+            removedComponent: function(id, prevComponent, nextComponent) {
+              this.setComponentsAfterNavbar();
+            },
+            changedComponentPosition: function(id, oldPrevId) {
+              this.setComponentsAfterNavbar();
+            }
+        }
+    });
+
+}(jQuery, mbrAppCore));
+//# sourceMappingURL=core-after-navbar.js.map

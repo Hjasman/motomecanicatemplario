@@ -16,7 +16,7 @@
             <span class="input-group-text bg-primary">Nombre:</span>
             <input type="text" required name="cel" value="Julio" class="form-control col-sm-2 " >
             <input type="text" required name="cel" value="Chavez" class="form-control col-sm-2 " >
-            <input type="text" required name="cel" value="Martinez" class="form-control col-sm-2 " >
+            <input type="text" required name="cel" value="Martinez" class="form-controsl col-sm-2 " >
             <span class="input-group-text bg-primary">Celular</span>
             <input type="text" required name="cel" value="75522314" class="form-control col-sm-2 " >
         </div> 
@@ -44,15 +44,25 @@
               </div>
         
         </div>  
-        
         <div>
             <label for="text" class="col-sm-4 col-form-label ">Diagnostico</label>
+        </div>
+        <div class="mt-3 input-group">
+            <span class="input-group-text bg-primary">Descripcion:</span>
+            <div class="col-sm-6">
+                <textarea class="form-control" disabled placeholder="Descripcion general" class="form-control text-transform:uppercase;" onkeyup="javascript:this.value=this.value.toUpperCase();" style="height: 80px;"
+                name="descrp">NECESITA LIMPIEZA Y AFINADO DEL MOTOR, ENGRASADO DE PIEZAS MOVEILES, CAMBIO DE ACEITE</textarea>
+              </div>
+        
+        </div>
+        <div>
+            <label for="text" class="col-sm-4 col-form-label ">Resolucion</label>
         </div>
         <div class="mt-3 input-group">
             <span class="input-group-text bg-primary">Diagnosis:</span>
             <div class="col-sm-6">
                 <textarea class="form-control" disabled placeholder="" class="form-control text-transform:uppercase;" onkeyup="javascript:this.value=this.value.toUpperCase();" style="height: 80px;"
-                name="descrp">NECESITA LIMPIEZA Y AFINADO DEL MOTOR, ENGRASADO DE PIEZAS MOVEILES, CAMBIO DE ACEITE</textarea>
+                name="descrp">SE REALIZO LALIMPIEZA Y AFINADO DEL MOTOR, EL ENGRASADO DE PIEZAS MOVEILES, CAMBIO DE ACEITE FILTRO DE ACEITE Y FILTRO DE AIRE</textarea>
               </div>
         
         </div>

@@ -19,13 +19,21 @@ class SolicitudController extends Controller
        return view('solicitud/solicitud');
     }
     public function buscarcli(Request $request)
-    {
+    { $nose="okk";
       $cliente_q = DB::table('clientes')
                   ->select('*')
                   ->where('celular_cl','=',$request->cel)
                   ->first();
-       return view('solicitud/solicitud2',compact('cliente_q'));
-    }
+                  
+        if(!isset($cliente_q))
+        {
+          return redirect()->route ('solicitud.principalsl')->with('actuali','ok');
+        }
+        else
+        {
+         return view('solicitud/solicitud2',compact('cliente_q'));
+        }
+      }
     public function solicitud22()
     {
      return view('solicitud.solicitud2');

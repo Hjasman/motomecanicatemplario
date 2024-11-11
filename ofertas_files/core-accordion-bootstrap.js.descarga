@@ -1,0 +1,82 @@
+(function($, APP) {
+
+    APP.regExtension({
+        name: 'core-accordion-bootstrap',
+        global: {
+
+            setUserAccordions: function(component, context) {
+                context = $(context['0']).find('[data-app-component-id=' + component._id + '] > .app-component-content section');
+
+                var parent = $(context).find('.panel-group');
+                var aToggle = $(context).find('a[data-toggle="collapse"]');
+                var currentComponentId = component._id;
+                var panelCollapse = $(context).find('.panel-collapse');
+
+                var addComponentId = function(id, newId) {
+                    var result = id.split('_');
+                    result[result.length - 1] = '_' + newId;
+                    result = result.join('');
+
+                    return result;
+                };
+
+                // Set accordion id
+                if (!context.find('[id*="bootstrap-accordion"]').length || !context[0]) return;
+
+                if (parent.attr('id').indexOf('_') == -1) {
+                    parent.attr('id', parent.attr('id') + '_' + currentComponentId);
+                } else {
+                    parent.attr('id', addComponentId(parent.attr('id'), currentComponentId));
+                }
+                // Set a.button data parent and href attributes
+                $(aToggle).each(function() {
+                    var currentHref = $(this).attr('href');
+                    if (currentHref.indexOf('_') == -1) {
+                        $(this).attr('href', currentHref + '_' + currentComponentId);
+                    } else {
+                        $(this).attr('href', addComponentId(currentHref, currentComponentId));
+                    }
+                });
+                // Set data-parent attr for panel-collapse (NEW in Bootstrap 4.0.0)
+                $(panelCollapse).each(function() {
+                    let bsVersion = $(context).attr('data-bs-version');
+                    bsVersion && bsVersion.startsWith('5')
+                    ? $(this).attr('data-bs-parent', '#' + parent.attr('id'))
+                    : $(this).attr('data-parent', '#' + parent.attr('id'));
+                });
+
+
+                $(context).find('.panel-collapse').each(function() {
+                    var thisId = $(this).attr('id');
+                    if (thisId.indexOf('_') == -1) {
+                        $(this).attr('id', thisId + '_' + currentComponentId);
+                    } else {
+                        $(this).attr('id', addComponentId(thisId, currentComponentId));
+                    }
+                });
+            },
+
+            publishUserAccordions: function(component, context) {
+                if (!context.find('[id*="bootstrap-accordion"]').length) return;
+                var itemArray = context.find('.accordion-group').children();
+                var number = component._params ? parseInt(component._params.tabs) : undefined;
+                for (var key in itemArray) {
+                    if (parseInt(key) + 1 > number) {
+                        $(itemArray[key]).remove();
+                    }
+                }
+            }
+        },
+        events: {
+            loadedComponent: function(component, page, context, publish) {
+                this.setUserAccordions(component, context);
+                if (publish) {
+                    this.publishUserAccordions(component, context);
+                }
+            }
+        }
+    });
+
+}(jQuery, mbrAppCore));
+
+//# sourceMappingURL=core-accordion-bootstrap.js.map

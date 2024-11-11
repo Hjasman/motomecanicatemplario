@@ -1,0 +1,14 @@
+var $,
+    isJQuery = typeof jQuery == 'function';
+if (isJQuery) $ = jQuery;
+var isBuilder = document.querySelector('html').classList.contains('is-builder');
+
+if (!isBuilder) {
+    if (typeof window.initPopupBtnPlugin === 'undefined') {
+        window.initPopupBtnPlugin = true;
+        document.querySelectorAll('section.popup-btn-cards .card-wrapper').forEach(function (el) {
+            el.classList.add('popup-btn');
+        });
+    }
+}
+//# sourceMappingURL=mbr-popup-btns.js.map

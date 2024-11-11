@@ -1,0 +1,39 @@
+(function($, APP) {
+    'use strict';
+
+
+    // Helpers for mobirise site js and some plugins
+    APP.regExtension({
+        name: 'plugin-mobirise',
+        global: {},
+        events: {
+
+            loadedComponent: function(component, page, context, publish) {
+                this.setComponentsAfterNavbar(page, context);
+            },
+
+            removedComponent: function(id, prevComponent, nextComponent) {
+                // update parallax backgrounds
+                setTimeout(function() {
+                    $(window).trigger('update.parallax');
+                }, 50);
+            },
+
+            changedComponentPosition: function(id, oldPrevId) {
+                // update parallax backgrounds
+                $(window).trigger('update.parallax');
+            },
+
+            saveMediaImageDialog: function() {
+                // update parallax backgrounds
+                setTimeout(function() {
+                    $(window).trigger('update.parallax');
+                }, 50);
+            }
+
+        }
+    });
+
+}(jQuery, mbrAppCore));
+
+//# sourceMappingURL=core-auto-paddings.js.map

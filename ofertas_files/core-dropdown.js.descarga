@@ -1,0 +1,399 @@
+(function($, CORE) {
+
+    var ADDON_NAME = 'dropdown-menu';
+
+    // search for "dropdownMenu" summernote plugin
+    var dropdownMenuPlugin;
+    for (var p in $.summernote.plugins) {
+        if ($.summernote.plugins[p]['name'] == 'dropdownMenu')
+            dropdownMenuPlugin = $.summernote.plugins[p];
+    }
+    if (!dropdownMenuPlugin) { // !!! fail
+        console.log('Error: dropdownMenu summernote plugin not found')
+        return;
+    }
+
+    CORE.regExtension({
+        name: ADDON_NAME,
+        global: {},
+        events: {
+            load: function() {
+
+                // decorator for 'mbrBtnColor'
+                (function(events) {
+                    var func = events.mbrBtnColor;
+                    events.mbrBtnColor = function(event, editor, layoutInfo, value) {
+                        if (value.indexOf('-outline') < 0) {
+                            var $editable = layoutInfo.editable();
+                            var matches = /(?:^|\s)(btn-[a-z]+-outline)(?:\s|$)/.exec($editable[0].className);
+                            if (matches) {
+                                var componentID = $editable.closest('[data-app-component-id]').attr('data-app-component-id');
+                                $editable.removeClass(matches[1]).addClass(value + '-outline');
+                            }
+                        }
+                        return func.apply(this, arguments);
+                    };
+                })($.summernote.pluginEvents);
+
+                var func = function() {
+                    $(this.document)
+                        .off('click.bs.nav-dropdown.data-api', $.fn.navDropdown.Constructor._clearMenus)
+                        .off('click.bs.nav-dropdown.data-api', $.fn.navDropdown.Constructor.prototype.toggle)
+                        .off('keydown.bs.nav-dropdown.data-api')
+                        .on('click.bs.nav-dropdown.data-api', '[data-toggle="dropdown-submenu"]', function(event) {
+                            if ($.fn.navDropdown.Constructor.prototype.toggle.call(this, event) === false) {
+                                event.preventDefault();
+                            }
+                        })
+                        .click(function(event) {
+                            $(document).trigger('dropdown_click');
+                            var $dropdown = $(event.target).closest('.navbar-dropdown').find('.nav-dropdown');
+                            if ($dropdown && $.fn.navDropdown.Constructor._isCollapsed($dropdown)) {
+                                return;
+                            }
+
+                            var $parents = $(event.target).parents();
+
+                            if ($parents.is('.note-popover')) {
+                                return;
+                            } else if ($parents.is('.nav-dropdown .dropdown.open')) {
+
+                                if (!$(event.target).is('[data-toggle="dropdown-submenu"]')) {
+                                    $(event.target.parentNode)
+                                        .find('.dropdown.open').removeClass('open').end()
+                                        .find('.dropdown-toggle[aria-expanded="true"]').attr('aria-expanded', 'false');
+                                }
+
+                                return;
+
+                            }
+
+                            $(this.body).find('.nav-dropdown')
+                                .find('.dropdown.open').removeClass('open').end()
+                                .find('.dropdown-toggle[aria-expanded="true"]').attr('aria-expanded', 'false');
+
+                            // Change html of menu (delete class 'open')
+                            let idComponent = $(this.body).find('.nav-dropdown').closest("[data-app-component-id]").attr('data-app-component-id');
+                            if (idComponent && CORE.getComponent(idComponent)._customHTML) {
+                                CORE.getComponent(idComponent)._customHTML = CORE.getComponent(idComponent)._customHTML.replace("dropdown open", "dropdown");
+                            }
+                        });
+                };
+
+                var rivetsOff = false;
+
+                $(window).blur(function() {
+                    $(this.document).find('.note-popover > *').attr('style', 'display: none;');
+                    $(this.document).find('.dropdown.open').removeClass('open').end()
+                        .find('.dropdown-toggle[aria-expanded="true"]').attr('aria-expanded', 'false');
+                });
+
+                $(window.document).on('focusout', function(event) {
+                    if (rivetsOff) {
+                        rivetsOff = false;
+                        event.preventDefault();
+                    }
+                });
+
+                $.fn.rivetsOff = function() {
+                    rivetsOff = true;
+                    return this;
+                };
+
+                if ($.fn.navDropdown) {
+                    func.call(window);
+                } else {
+                    $(window).on('ready.bs.nav-dropdown', func);
+                }
+
+                // fix for sticky menu when close blocks' panel and APP.appSettings.fullscreenCanvas is on
+                CORE.APP.on('beforeHideComponents', () => {
+                    if (!CORE.APP.$body.hasClass('app-add-component-open')) {
+                        return;
+                    }
+
+                    if (CORE.APP.appSettings.fullscreenCanvas) {
+                        let pageComponents = CORE.getPageComponents();
+
+                        for (const el in pageComponents) {
+                            if (pageComponents.hasOwnProperty(el)) {
+                                const component = pageComponents[el];
+
+                                if (component._group === 'Menu' || component._name.toLowerCase().indexOf('menu') > -1) {
+                                    let $menu = $(CORE.getComponentBlock(component._id));
+                                    let $navbar = $menu.find('.navbar-dropdown');
+
+                                    if (!$navbar.length) {
+                                        $navbar = $menu.find('nav');
+                                    }
+
+                                    $menu.removeClass('sticky-component');
+                                    $navbar.css('position', '');
+
+                                    let $stickyBtn = $menu.find('.sticky-but');
+
+                                    if ($stickyBtn.length) {
+                                        $stickyBtn.css('position', '');
+                                    }
+
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // fix for sticky menu when template is scaled and APP.appSettings.fullscreenCanvas is on
+                CORE.APP.on('toggleComponents', () => {
+                    if (CORE.APP.appSettings.fullscreenCanvas) {
+                        let pageComponents = CORE.getPageComponents();
+
+                        for (const el in pageComponents) {
+                            if (pageComponents.hasOwnProperty(el)) {
+                                const component = pageComponents[el];
+
+                                if (component._group === 'Menu' || component._name.toLowerCase().indexOf('menu') > -1) {
+                                    let $menu = $(CORE.getComponentBlock(component._id));
+                                    let $navbar = $menu.find('.navbar-dropdown');
+
+                                    if (!$navbar.length) {
+                                        $navbar = $menu.find('nav');
+                                    }
+
+                                    if (CORE.APP.$body.hasClass('app-add-component-open')) {
+                                        if (component._params.sticky) {
+                                            $menu.addClass('sticky-component');
+                                            $navbar.css('position', 'absolute');
+                                        }
+
+                                        let $stickyBtn = $menu.find('.sticky-but');
+
+                                        if ($stickyBtn.length) {
+                                            $stickyBtn.css('position', 'absolute');
+                                        }
+                                    } else {
+                                        $menu.removeClass('sticky-component');
+                                        $navbar.css('position', '');
+
+                                        let $stickyBtn = $menu.find('.sticky-but');
+
+                                        if ($stickyBtn.length) {
+                                            $stickyBtn.css('position', '');
+                                        }
+                                    }
+
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // fix menu block in m5 template
+                CORE.APP.on('applyAppSettings', () => {
+                    let pageComponents = CORE.getPageComponents();
+
+                    for (const el in pageComponents) {
+                        if (pageComponents.hasOwnProperty(el)) {
+                            const component = pageComponents[el];
+
+                            if (component._group === 'Menu' || component._name.toLowerCase().indexOf('menu') > -1) {
+                                let $menu = $(CORE.getComponentBlock(component._id));
+                                let $navbar = $menu.find('.navbar-dropdown');
+
+                                if (!$navbar.length) {
+                                    $navbar = $menu.find('nav');
+                                }
+
+                                if (CORE.APP.appSettings.fullscreenCanvas) {
+                                    $menu.removeClass('sticky-component');
+                                    $navbar.css('position', '');
+
+                                    let $stickyBtn = $menu.find('.sticky-but');
+
+                                    if ($stickyBtn.length) {
+                                        $stickyBtn.css('position', '');
+                                    }
+                                } else {
+                                    if (component._params.sticky) {
+                                        $menu.addClass('sticky-component');
+                                        $navbar.css('position', 'absolute');
+                                    }
+
+                                    let $stickyBtn = $menu.find('.sticky-but');
+
+                                    if ($stickyBtn.length) {
+                                        $stickyBtn.css('position', 'absolute');
+                                    }
+                                }
+
+                                return;
+                            }
+                        }
+                    }
+                });
+            },
+
+            summernoteInited: function(Item) {
+
+                if ($(Item).closest('.nav-dropdown').length) {
+
+                    if ($(Item).is('[data-button]')) {
+
+                        $(Item).summernote('popover.addGroup', ['dropdownMenu', [
+                            'dropdownMenuAddButton',
+                            'dropdownMenuRemoveButton'
+                        ]]);
+                        var layoutInfo = $.summernote.core.dom.makeLayoutInfo($(Item));
+                        layoutInfo.popover()
+                            .find('.note-insert3').hide().end() // hide buttons
+                            .find('.note-dropdownMenu button')
+
+                            .tooltip({
+                                container: 'body',
+                                trigger: 'hover',
+                                placement: 'top'
+                            });
+
+                    } else {
+
+                        $(Item).summernote('popover.addGroup', ['dropdownMenu', [
+                            'dropdownMenuAddItem',
+                            'dropdownMenuAddSubItem',
+                            'dropdownMenuMove' + (Item.parentNode.tagName === 'LI' ? 'Left' : 'Up'),
+                            // 'dropdownMenuMove' + (Item.parentNode.tagName === 'LI' ? 'Right' : 'Down'),
+                            'dropdownMenuRemove'
+                        ]]);
+                        var layoutInfo = $.summernote.core.dom.makeLayoutInfo($(Item));
+                        layoutInfo.popover()
+                            .find('.note-insert3').hide().end() // hide buttons
+                            .find('.note-dropdownMenu button')
+
+                            .tooltip({
+                                container: 'body',
+                                trigger: 'hover',
+                                placement: 'top'
+                            });
+                    }
+                }
+            },
+
+            // fix for sticky menu when APP.appSettings.fullscreenCanvas is off or blocks' panel is open
+            loadedComponent: (component, page, context, publish) => {
+                if (!publish && (component._alwaysTop || component._once === 'menu') && (!CORE.APP.appSettings.fullscreenCanvas || CORE.APP.$body.hasClass('app-add-component-open'))) {
+                    let $menu = $(CORE.getComponentBlock(component._id));
+                    let $navbar = $menu.find('.navbar-dropdown');
+
+                    if (!$navbar.length) {
+                        $navbar = $menu.find('nav');
+                    }
+
+                    if ($navbar.length && component._params.sticky) {
+                        $menu.addClass('sticky-component');
+                        $navbar.css('position', 'absolute');
+
+                        let $stickyBtn = $menu.find('.sticky-but');
+
+                        if ($stickyBtn.length) {
+                            $stickyBtn.css('position', 'absolute');
+                        }
+                    }
+                }
+            },
+
+            // fix for sticky menu according to APP.appSettings.fullscreenCanvas
+            changeComponentParams: (id, name, value) => {
+                if (name === 'sticky' && !CORE.APP.appSettings.fullscreenCanvas && (CORE.getComponent(id)._alwaysTop || CORE.getComponent(id)._once === 'menu')) {
+                    let $menu = $(CORE.getComponentBlock(id));
+                    let $navbar = $menu.find('.navbar-dropdown');
+
+                    if (!$navbar.length) {
+                        $navbar = $menu.find('nav');
+                    }
+
+                    if (value) {
+                        $menu.addClass('sticky-component');
+                        let $navbarInitialPosition = $navbar.css('position');
+
+                        $navbar.css('position', $navbarInitialPosition);
+                    } else {
+                        $menu.removeClass('sticky-component');
+                        $navbar.css('position', '');
+                    }
+
+                    let $stickyBtn = $menu.find('.sticky-but');
+
+                    if ($stickyBtn.length) {
+                        $stickyBtn.css('position', 'absolute');
+                    } else {
+                        $stickyBtn.css('position', '');
+                    }
+                }
+            },
+
+            startChangeComponentPosition: () => {
+                if (CORE.APP.appSettings.fullscreenCanvas) {
+                    let pageComponents = CORE.getPageComponents();
+
+                    for (const el in pageComponents) {
+                        if (pageComponents.hasOwnProperty(el)) {
+                            const component = pageComponents[el];
+
+                            if (component._group === 'Menu' || component._name.toLowerCase().indexOf('menu') > -1) {
+                                let $menu = $(CORE.getComponentBlock(component._id));
+                                let $navbar = $menu.find('.navbar-dropdown');
+
+                                if (!$navbar.length) {
+                                    $navbar = $menu.find('nav');
+                                }
+
+                                if (component._params.sticky) {
+                                    $menu.addClass('sticky-component');
+                                    $navbar.css('position', 'absolute');
+                                }
+
+                                let $stickyBtn = $menu.find('.sticky-but');
+
+                                if ($stickyBtn.length) {
+                                    $stickyBtn.css('position', 'absolute');
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            changeComponentPosition: () => {
+                if (CORE.APP.appSettings.fullscreenCanvas) {
+                    let pageComponents = CORE.getPageComponents();
+
+                    for (const el in pageComponents) {
+                        if (pageComponents.hasOwnProperty(el)) {
+                            const component = pageComponents[el];
+
+                            if (component._group === 'Menu' || component._name.toLowerCase().indexOf('menu') > -1) {
+                                let $menu = $(CORE.getComponentBlock(component._id));
+                                let $navbar = $menu.find('.navbar-dropdown');
+
+                                if (!$navbar.length) {
+                                    $navbar = $menu.find('nav');
+                                }
+
+                                $menu.removeClass('sticky-component');
+                                $navbar.css('position', '');
+
+                                let $stickyBtn = $menu.find('.sticky-but');
+
+                                if ($stickyBtn.length) {
+                                    $stickyBtn.css('position', '');
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+})(jQuery, mbrAppCore);
+//# sourceMappingURL=core-dropdown.js.map

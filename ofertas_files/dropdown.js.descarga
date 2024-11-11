@@ -1,0 +1,100 @@
+(function ($, APP) {
+  APP.regExtension({
+        name: 'dropdown-menu',
+        global: {
+
+            arrayToDropdownMenu: (function () {
+
+                function _(str) {
+                    for (var i = 1; i < arguments.length; i++) {
+                        str = str.replace('%s', arguments[i]);
+                    }
+                    return str;
+                }
+
+                function isButton(item) {
+                    return !!item.btn;
+                }
+
+                function isDropdown(item) {
+                    return !!(item.children && item.children.length);
+                }
+
+                function arrayToHTML(items, level) {
+
+                    var html = '';
+
+                    for (var i = 0; i < items.length; i++) {
+                        var item = items[i];
+                        if (typeof item != 'object') {
+                            item = {
+                                text: item
+                            };
+                        }
+                        if (!item.href) {
+                            item.href = 'https://mobirise.com/';
+                        }
+                        if (level) {
+                            if (isDropdown(item)) {
+                                html += _(
+                                    '<div class="dropdown">' +
+                                    '<a data-app-btn="true" class="dropdown-item dropdown-toggle" data-toggle="dropdown-submenu" href="%s">%s</a>' +
+                                    '<div class="dropdown-menu dropdown-submenu">%s</div>' +
+                                    '</div>',
+                                    item.href,
+                                    item.text,
+                                    arrayToHTML(item.children, level + 1)
+                                );
+                            } else {
+                                html += _(
+                                    '<a data-app-btn="true" class="dropdown-item" href="%s">%s</a>',
+                                    item.href,
+                                    item.text
+                                );
+                            }
+                        } else {
+                            if (isButton(item)) {
+                                html += _(
+                                    '<li class="nav-item nav-btn"><a data-app-btn="true" data-button data-app-selector=".btn" class="nav-link btn %s" href="%s">%s</a></li>',
+                                    item.btn,
+                                    item.href,
+                                    item.text
+                                );
+                            } else if (isDropdown(item)) {
+                                html += _(
+                                    '<li class="nav-item dropdown">' +
+                                    '<a data-app-btn="true" class="nav-link link dropdown-toggle" data-toggle="dropdown-submenu" href="%s">%s</a>' +
+                                    '<div class="dropdown-menu">%s</div>' +
+                                    '</li>',
+                                    item.href,
+                                    item.text,
+                                    arrayToHTML(item.children, 1)
+                                );
+                            } else {
+                                html += _(
+                                    '<li class="nav-item"><a data-app-btn="true" class="nav-link link" href="%s">%s</a></li>',
+                                    item.href,
+                                    item.text
+                                );
+                            }
+                        }
+                    }
+
+                    return html;
+
+                }
+
+                return arrayToHTML;
+
+            })()
+
+        },
+
+        events: {
+            removeLastMenuItem: function () {
+                APP.alertDlg('This is the last menu item, you can\'t remove it');
+            }
+        }
+    });
+} (jQuery, mbrApp));
+//# sourceMappingURL=dropdown.js.map

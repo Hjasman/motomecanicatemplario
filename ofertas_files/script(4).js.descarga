@@ -1,0 +1,272 @@
+(function () {
+'use strict';
+    const isBuilder = document.querySelector('html').classList.contains('is-builder');
+
+    // youtube or vimeo
+    function checkPlayerName(url) {
+        if (url === 'false') return false;
+
+        var result = url.match(/(http:|https:|)\/\/(player.|www.)?(vimeo\.com|youtu(be\.com|\.be|be\.googleapis\.com))\/(video\/|embed\/|watch\?v=|v\/)?([A-Za-z0-9._%-]*)(&\S+)?/);
+
+        if (result && /youtu\.?be/g.test(result[3])) {
+            return 'youtube';
+        } else if (result && /vimeo/g.test(result[3])) {
+            return 'vimeo';
+        }
+
+        return false;
+    }
+
+    // youtube or vimeo
+    function getVideoId(url) {
+        if (url === 'false') return false;
+
+        var result = url.match(/(http:|https:|)\/\/(player.|www.)?(vimeo\.com|youtu(be\.com|\.be|be\.googleapis\.com))\/(video\/|embed\/|watch\?v=|v\/)?([A-Za-z0-9._%-]*)(&\S+)?/);
+
+        return result ? result[6] : false;
+    }
+
+    function getYTPreviewUrl(videoId, quality) {
+        return 'https://img.youtube.com/vi/' + videoId + '/' +
+            (quality || '') + 'default.jpg';
+    }
+
+    function getVimeoPreviewUrl(vimeoId, callback) {
+        var request = new XMLHttpRequest();
+        request.open('GET', 'https://vimeo.com/api/v2/video/' + vimeoId + '.json', true);
+        request.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                if (this.status >= 200 && this.status < 400) {
+                    var response = JSON.parse(this.responseText);
+
+                    callback(response[0].thumbnail_large);
+                }
+            }
+        };
+        request.send();
+        request = null;
+    }
+
+    const optimizeDisplay = function (player, iframe) {
+        let vid = {};
+        let win = {};
+        win.width = window.outerWidth;
+        win.height = window.outerHeight;
+
+        let ratio = player._opts.width / player._opts.height;
+
+        vid.width = win.width;
+        vid.height = Math.ceil(vid.width / ratio);
+        vid.marginTop = Math.ceil(-((vid.height - win.height) / 2));
+        let lowest = vid.height < win.height;
+
+        if (lowest) {
+            vid.height = win.height;
+            vid.width = Math.ceil(vid.height * ratio);
+            vid.marginLeft = Math.ceil(-((vid.width - win.width) / 2))
+        }
+        player.setSize(vid.width, vid.height);
+    };
+
+    var getYTPreviewUrlWithBestQuality = (function () {
+        var cache = {};
+
+        return function (id) {
+            return new Promise((resolve, reject) => {
+                if (id in cache) {
+                    if (cache[id]) {
+                        resolve(cache[id]);
+                    } else {
+                        reject('Preview image not found.')
+                    }
+                } else {
+                    let newImage = document.createElement('img');
+
+                    newImage.addEventListener('load', (e) => {
+                        let target = e.target;
+                        if (120 === (target.naturalWidth || target.width)) {
+                            // selection of preview in the best quality
+                            var file = target.src.split('/').pop();
+                            switch (file) {
+                                case 'maxresdefault.jpg':
+                                    target.src = target.src.replace(file, 'sddefault.jpg');
+                                    break;
+                                case 'sddefault.jpg':
+                                    target.src = target.src.replace(file, 'hqdefault.jpg');
+                                    break;
+                                case 'hqdefault.jpg':
+                                    target.src = target.src.replace(file, 'default.jpg');
+                                    break;
+                                default:
+                                    cache[id] = null;
+                                    reject('Preview image not found.');
+                                    break;
+                            }
+                        } else {
+                            resolve(cache[id] = target.src);
+                        }
+                    });
+
+                    newImage.setAttribute('src', getYTPreviewUrl(id, 'maxres'));
+                }
+            })
+        }
+    })();
+
+    /*
+     * check for youtube/vimeo video section and
+     * load videopreview from youtube/vimeo on 'add' event and enable YTPlayer/vimeo_player
+     * */
+    if (!isBuilder) {
+        Array.from(document.body.children).filter(function (el) { return !el.matches('style, script') })
+            .forEach(function (ch) {
+                ch.addEventListener('add.cards', function (event) {
+                    if (!event.target.classList.contains('carousel')) return;
+
+                    const isDesktop = document.querySelector('html').classList.contains('desktop')
+
+                    const videoSlides = event.target.querySelectorAll('[data-bg-video-slide]');
+                    videoSlides.forEach(slide => {
+                        let videoId = getVideoId(slide.getAttribute('data-bg-video-slide'));
+                        if (!videoId) return;
+                        let preview = document.createElement('div');
+
+                        preview.classList.add('mbr-background-video-preview');
+                        preview.style.display = 'none';
+                        preview.style.backgroundSize = 'cover';
+                        preview.style.backgroundPosition = 'center';
+
+                        slide.querySelector('.container-slide').before(preview)
+
+                        let playerName = checkPlayerName(slide.getAttribute('data-bg-video-slide'));
+
+                        let overlay = slide.querySelectorAll('.mbr-overlay');
+
+                        if (playerName === 'youtube') {
+                            getYTPreviewUrlWithBestQuality(videoId).then(url => {
+                                preview.style.backgroundImage = 'url("' + url + '")';
+                                preview.style.display = 'block';
+                            });
+
+                            if (isDesktop && window.YouTubePlayer && !slide.querySelectorAll('.playerBox').length) {
+
+                                let video = document.createElement('div');
+                                video.classList.add('mbr-background-video');
+                                slide.querySelector('.container-slide').before(video);
+
+                                let options = {
+                                    videoURL: videoId,
+                                    containment: 'self',
+                                    showControls: false,
+                                    mute: true,
+                                    modestBranding: true,
+                                    autoplay: true,
+                                    controls: false,
+                                    origin: '*',
+                                    iv_load_policy: false,
+                                    keyboard: false,
+                                    captions: false,
+                                    annotations: false,
+                                    related: false
+                                };
+                                
+                                video.style.pointerEvents = 'none';
+                                var player = new YouTubePlayer(video, options);
+
+                                player.load(videoId, true);
+
+                                player.play();
+                                player.loadPlaylist();
+                                player.setLoop(true);
+                                player.mute();
+
+                                if (overlay.length) {
+                                    slide.querySelectorAll('.YTPOverlay').forEach(ytpoverlay => {
+                                        ytpoverlay.style.opacity = overlay.style.opacity;
+                                        ytpoverlay.style.backgroundColor = overlay.style.backgroundColor;
+                                    });
+                                };
+
+                                optimizeDisplay(player)
+
+                                slide.querySelectorAll('.image_wrapper img').forEach(img => img.style.opacity = 0);
+                                slide.querySelectorAll('.image_wrapper .mbr-overlay').forEach(img => img.style.opacity = 0);
+                            }
+                        } else {
+                            getVimeoPreviewUrl(videoId, (url) => {
+                                preview.style.backgroundImage = 'url("' + url + '")';
+                                preview.style.display = 'block';
+                            });
+
+                            if (isDesktop && window.vimeo && !slide.querySelectorAll('.playerBox').length) {
+
+                                let video = document.createElement('div');
+
+                                video.classList.add('mbr-background-video');
+                                slide.querySelector('.container-slide').before(video);
+
+                                var options = {
+                                    id: videoId,
+                                    width: '100%',
+                                    height: '100%',
+                                    loop: true
+                                };
+
+                                var player = new Vimeo.Player('mbr-video-' + i, options);
+
+                                if (overlay.length) {
+                                    slide.querySelectorAll('.vimeo_player_overlay').forEach(vimeo_overlay => {
+                                        vimeo_overlay.style.opacity = overlay.style.opacity;
+                                        vimeo_overlay.style.backgroundColor = overlay.style.backgroundColor;
+                                    })
+                                }
+                            }
+                        }
+
+                    });
+
+                    event.target.querySelectorAll('.carousel-item iframe').forEach(iframe => {
+                        iframe.style.transitionDuration = '1000ms'
+                        iframe.style.transitionProperty = 'opacity'
+                    });
+
+                    let events = ['slide.bs.carousel', 'section.carousel'];
+
+                    events.forEach(eventName => {
+                        // pause YTPlayer/vimeo_player in hidden slides, apply some css rules
+                        ch.addEventListener(eventName, function (event) {
+                            event.target.querySelectorAll('.carousel-item.active .mb_YTPlayer').forEach(el => {
+                                el.YTPPause();
+                            });
+
+                            event.target.querySelectorAll('.carousel-item.active .vimeo_player').forEach(el => {
+                                el.v_pause();
+                            });
+
+                            event.target.querySelectorAll('.carousel-item:not(.active) iframe').forEach(el => {
+                                el.style.opacity = 0
+                            });
+                        });
+
+                        // start YTPPlayer in active slides, apply some css rules
+                        ch.addEventListener(eventName, function (event) {
+                            event.target.querySelectorAll('.carousel-item.active .mb_YTPlayer').forEach(el => {
+                                el.YTPPlay();
+                            });
+
+                            event.target.querySelectorAll('.carousel-item.active .vimeo_player').forEach(el => {
+                                el.v_play();
+                            });
+
+                            event.target.querySelectorAll('.carousel-item.active iframe').forEach(el => {
+                                el.dispatchEvent(new Event('resize'));
+                                el.style.opacity = 1;
+                            })
+                        });
+                    })
+                });
+            });
+    }
+
+})();
+//# sourceMappingURL=script.js.map

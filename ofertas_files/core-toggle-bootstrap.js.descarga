@@ -1,0 +1,60 @@
+(function($, APP) {
+
+    APP.regExtension({
+        name: 'core-toggle-bootstrap',
+        global: {
+            setUserToggles: function(component, context) {
+                if(!context.find('[id*="bootstrap-toggle"]').length) return;
+                var context = $(context['0']).find('[data-app-component-id=' + component._id + '] > .app-component-content section'),
+                    aToggle = $(context).find('a[data-toggle="collapse"]'),
+                    currentComponentId = component._id;
+                var addComponentId = function(id, newId){
+                    var result = id.split('_');
+                    result[result.length - 1] = '_' + newId;
+                    result = result.join('');
+                    return result;
+                };
+
+                if(!context[0]){ return };
+                $(aToggle).each(function(){
+                    var currentHref = $(this).attr('href');
+                    if ( currentHref.indexOf('_') == -1 ) {
+                        $(this).attr('href', currentHref + "_" + currentComponentId);
+                    } else {
+                        $(this).attr('href', addComponentId(currentHref, currentComponentId));
+                    }
+                });
+
+                $(context).find('.panel-collapse').each(function() {
+                    var thisId = $(this).attr('id');
+                    if (thisId.indexOf('_') == -1) {
+                        $(this).attr('id', thisId + '_' + currentComponentId);
+                    } else {
+                        $(this).attr('id', addComponentId(thisId, currentComponentId));
+                    }
+                });  
+            },
+
+            publishUserToggles: function(component, context) {
+                if(!context.find('[id*="bootstrap-toggle"]').length) return;
+                var itemArray = context.find('.accordion-group').children(),
+                    number = parseInt(component._params.tabs);
+                for (var key in itemArray) {
+                    if (parseInt(key) + 1 > number) {
+                        $(itemArray[key]).remove();
+                    };
+                };
+            }
+        },
+        events: {
+            loadedComponent: function(component, page, context, publish) {
+                this.setUserToggles(component, context);
+                if(publish){
+                    this.publishUserToggles(component, context);
+                }
+            }
+        }
+    });
+
+}(jQuery, mbrAppCore));
+//# sourceMappingURL=core-toggle-bootstrap.js.map

@@ -1,0 +1,20 @@
+(function ($, APP) {
+    'use strict';
+    APP.regExtension({
+        name: 'scrollAnimation',
+        events: {
+            load: function () {
+                var _this = this;
+                /* filter for publish html */
+                _this.addFilter('publishHTML', function (html) {
+                    if (APP.getThemeSettings('isAnimatedOnScroll')) {
+                        return html.replace('</body>', '  <input name="animation" type="hidden">\n' + '  </body>');
+                    } else {
+                        return html;
+                    }
+                });
+            }
+        }
+    });
+} (jQuery, mbrApp));
+//# sourceMappingURL=scroll-animation.js.map

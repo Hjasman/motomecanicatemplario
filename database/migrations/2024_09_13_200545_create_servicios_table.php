@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('servicios', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre_serv',30);
+            $table->string('nombre_serv',50);
             $table->string('descripcion_serv',200)->nullable();
             $table->double('precio_serv', 6, 2)->nullable();
 

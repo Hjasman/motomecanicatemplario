@@ -315,6 +315,10 @@ return [
             'icon' => 'fas fa-fw fa-lock',
         ],
         ['header' => 'OPCIONES'],
+
+        [   'text' => 'Principal',
+            'url' => 'home',
+            'icon' => 'fas fa-fw fa-user',],
         [   
             
                     
@@ -377,14 +381,14 @@ return [
                         ],
                         [
                             'text' => 'Diagnostico',
-                            'url' => 'admin/pages',
+                            'url' => 'diagnostico/llenadiagnostico',
                             'icon' => 'far fa-fw fa-file',
                             
                             'label_color' => 'success',
                         ],
                         [
                             'text' => 'Resolucion',
-                            'url' => 'admin/pages',
+                            'url' => 'resolucion/resolucion',
                             'icon' => 'far fa-fw fa-file',
                             
                             'label_color' => 'success',

@@ -1,0 +1,96 @@
+(function($, APP) {
+
+    function onImagesLoaded(container, event) {
+        var images = container.getElementsByTagName("img");
+        var loaded = images.length;
+        for (var i = 0; i < images.length; i++) {
+            if (images[i].complete) {
+                loaded--;
+            }
+            else {
+                images[i].addEventListener("load", function() {
+                    loaded--;
+                    if (loaded == 0) {
+                        event();
+                    }
+                });
+            }
+            if (loaded == 0) {
+                event();
+            }
+        }
+    };
+
+    APP.regExtension({
+        name: 'core-gallery',
+        global: {
+            setGallery: function(component) {
+                const gallery = $('[data-app-component-id=' + component._id + '] > .app-component-content .mbr-gallery');
+                if (gallery.length) {
+                    const $gallery = gallery.find('.row.mbr-gallery');
+                    $gallery.length && onImagesLoaded($gallery[0], function() {
+                        // All the images have loaded
+                        gallery.trigger('change.cards');
+                    });
+                }
+
+                const $masonryRow = $('[data-app-component-id=' + component._id + '] > .app-component-content .row.mbr-masonry');
+                if ($masonryRow.length) {
+                    const masonry = new Masonry($masonryRow[0], {});
+                    setTimeout(function() {
+                        masonry.layout();
+                    }, 100);
+                }
+            },
+            publishGallery: function(component, context) {
+                context.find('[data-app-component-id=' + component._id + '] > .app-component-content .mbr-gallery-item>div').attr('data-toggle', 'modal');
+            }
+
+        },
+        events: {
+            loadedComponent: function(component, page, context, publish) {
+                this.setGallery(component, context);
+                if (publish) {
+                    this.publishGallery(component, context);
+                }
+            },
+
+            saveMediaImageDialog: (modal, media, componentID) => {
+                setTimeout(function() {
+                    mbrAppCore.$body.find('.app-component[data-app-component-id="' + componentID + '"] .mbr-gallery').trigger('change.cards');
+                }, 100);
+            },
+
+            summernoteFocus: el => {
+                const $masonryRow = $(el).parents('[data-app-component-id]:eq(0)').find('.row.mbr-masonry');
+                if ($masonryRow.length) {
+                    $(el).parents('div.item').addClass('editing');
+                }
+            },
+
+            summernoteBlur: el => {
+                const $masonryRow = $(el).parents('[data-app-component-id]:eq(0)').find('.row.mbr-masonry');
+                if ($masonryRow.length) {
+                    $(el).parents('div.item').removeClass('editing');
+                    mbrAppCore.render($(el).parents('[data-app-component-id]:eq(0)').attr('data-app-component-id'));
+                }
+            },
+
+            rivetsBlur: el => {
+                const $masonryRow = $(el).parents('[data-app-component-id]:eq(0)').find('.row.mbr-masonry');
+                if ($masonryRow.length) {
+                    $(el).parents('div.item').removeClass('editing');
+                    mbrAppCore.render($(el).parents('[data-app-component-id]:eq(0)').attr('data-app-component-id'));
+                }
+            },
+            savedCodeEditor: id => {
+                if (mbrAppCore.$body.find('.app-component[data-app-component-id="' + id + '"] .row.mbr-masonry').length) {
+                    mbrAppCore.render(id);
+                }
+            }
+        }
+    });
+
+}(jQuery, mbrAppCore));
+
+//# sourceMappingURL=core-gallery.js.map

@@ -12,7 +12,7 @@
 @endphp
     <div class="container size-1/2 m-auto position-relative ">
 
-        {{$cliente_q->nombres_cl}}
+      
         <div class="card card-info w-responsive position-middle">
             <div class="card-header">
                 <h3 class="card-title">Nueva Solicitud</h3>

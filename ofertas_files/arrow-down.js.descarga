@@ -1,0 +1,31 @@
+(function($, APP) {
+
+    APP.regExtension({
+        name: 'arrow-down',
+        events: {
+            loaded: function() {
+                APP.$template.on('click', function(e) {
+                    if ($(e.target).closest('.mbr-arrow').length) {
+                        try {
+                            var $arrowLink = $(e.target).closest('.mbr-arrow').find('a');
+                            if ($arrowLink[0].href && $arrowLink[0].href.indexOf('#next') >= 0) {
+                                var $next = $arrowLink.closest('.app-component').next();
+                                if ($next.length) {
+                                    var offset = $next.offset();
+                                    var $body = $arrowLink.closest('body');
+                                    $body.stop().animate({
+                                        scrollTop: offset.top
+                                    }, 800, 'linear');
+                                }
+                            }
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    }
+                });
+            }
+        }
+    });
+}(jQuery, mbrApp));
+
+//# sourceMappingURL=arrow-down.js.map

@@ -1,0 +1,24 @@
+(function($, APP) {
+
+    APP.regExtension({
+        name: 'core-menu-styles',
+        global: {
+            closeSubitems: function() {
+                $('.nav-dropdown li').each(function() {
+                    var item = $(this)[0];
+
+                    $(item).removeClass('open');
+                });
+            }
+        },
+        events: {
+            loadedComponent: function(component, page, context, publish) {
+                if (!~component._name.toLowerCase().indexOf('menu')) return;
+                this.closeSubitems();
+            }
+        }
+    });
+
+}(jQuery, mbrAppCore));
+
+//# sourceMappingURL=core-menu-styles.js.map

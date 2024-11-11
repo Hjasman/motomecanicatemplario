@@ -1,0 +1,244 @@
+(function($, APP) {
+    var GALLERY_PREVIEW_IMAGE = '@ADDON_DIR@_images/gallery/logo.jpg';
+
+    APP.regExtension({
+        name: 'gallery-video',
+        global: {
+            /**
+             * @param {String} url
+             * @returns url of image or false
+             */
+            downloadVideoPreview: function(videoUrl) {
+                var isVimeo = false;
+                var videoId = '';
+
+                function getVimeoThumb(id) {
+                    var url = false;
+                    $.ajax({
+                        type: 'GET',
+                        url: 'https://vimeo.com/api/v2/video/' + id + '.json',
+                        dataType: 'json',
+                        async: false,
+                        success: function(data) {
+                            url = data[0].thumbnail_large;
+                        }
+                    });
+
+                    return url;
+                }
+
+                function getVimeoIDbyUrl(url) {
+                    var id = false;
+
+                    $.ajax({
+                        url: 'https://vimeo.com/api/oembed.json?url=' + url,
+                        type: 'GET',
+                        async: false,
+                        success: function(response) {
+                            if (response.video_id) {
+                                id = response.video_id;
+                            }
+                        }
+                    });
+
+                    return id;
+                }
+
+                function getVideoId(url) {
+                    var result = /(?:\?v=|\/embed\/|\.be\/)([-a-z0-9_]+)/i.exec(url) || /^([-a-z0-9_]+)$/i.exec(url);
+
+                    return result ? result[1] : false;
+                }
+
+                /**
+                 * @param {String} videoId
+                 * @param {String} quality, more info http://stackoverflow.com/questions/2068344/how-do-i-get-a-youtube-video-thumbnail-from-the-youtube-api
+                 */
+                function getYTPreviewUrl(videoId, quality) {
+                    return 'https://img.youtube.com/vi/' + videoId + '/' + (quality || '') + 'default.jpg';
+                }
+
+                var getYTPreviewUrlWithBestQuality = (function() {
+                    var cache = {};
+
+                    return function(id) {
+                        var def = $.Deferred();
+                        if (id in cache) {
+                            if (cache[id]) {
+                                def.resolve(cache[id]);
+                            } else {
+                                def.reject('Preview image not found.');
+                            }
+                        } else {
+                            $('<img>').on('load', function() {
+                                if (120 === (this.naturalWidth || this.width)) {
+                                    // selection of preview in the best quality
+                                    var file = this.src.split('/').pop();
+                                    switch (file) {
+                                        case 'maxresdefault.jpg':
+                                            this.src = this.src.replace(file, 'sddefault.jpg');
+                                            break;
+                                        case 'sddefault.jpg':
+                                            this.src = this.src.replace(file, 'hqdefault.jpg');
+                                            break;
+                                        case 'hqdefault.jpg':
+                                            this.src = this.src.replace(file, 'default.jpg');
+                                            break;
+                                        default:
+                                            cache[id] = null;
+                                            def.reject('Preview image not found.');
+                                            break;
+                                    }
+                                } else {
+                                    def.resolve(cache[id] = this.src);
+                                }
+                            }).attr('src', getYTPreviewUrl(id, 'maxres'));
+                        }
+
+                        return def;
+                    };
+                })();
+                
+
+                videoId = getVideoId(videoUrl);
+                if (videoUrl.indexOf('vimeo.com') != -1) {
+                    videoId = getVimeoIDbyUrl(videoUrl);
+                    isVimeo = true;
+                }
+                
+                function getVideoPreview(videoId, isVimeo, callback_path) {
+                    if (isVimeo) {
+                        APP.addImageFromUrlToAssets(getVimeoThumb(videoId)).then(callback_path);
+                    }
+                    else {
+                        getYTPreviewUrlWithBestQuality(videoId).done(function(YTurl) {
+                            APP.addImageFromUrlToAssets(YTurl).then(callback_path);
+                        });
+                    }
+                }
+                
+                var def = $.Deferred();
+                if (videoId) {
+                    getVideoPreview(videoId, isVimeo, function(path){
+                        def.resolve(path);
+                    })
+                } else {
+                    def.resolve(false);
+                }
+
+                return def;
+            }
+        },
+        events: {
+            load: function() {
+                function getNewParam(curSlide, $curSlide, url) {
+                    var componentId = APP.$componentsParams.attr('data-component-id');
+                    var defParams = APP.Core.getComponentParams(componentId)['default'];
+
+                    var $component = APP.$template.find('[data-app-component-id=' + componentId + '] > .app-component-content section [mbr-gallery]');
+                    var galleryName = $component.attr('mbr-gallery');
+
+                    var defaultImg = APP.Core.replaceSystemVariables(defParams[galleryName].defaultImg, APP.Core.getComponent(componentId));
+
+                    if (url) {
+                        return url;
+                    }
+
+                    if (defaultImg) {
+                        return defaultImg;
+                    }
+
+                    var previewSrc = APP.Core.replaceSystemVariables(GALLERY_PREVIEW_IMAGE, APP.Core.getComponent(componentId));
+
+                    return previewSrc;
+                }
+                var _this = this;
+                _this.Core.addFilter('changeComponentParams', function(value, paramName, params, id) {
+                    var $component = _this.$template.find('[data-app-component-id=' + id + '] > .app-component-content section [mbr-gallery]');
+                    var galleryName = $component.attr('mbr-gallery');
+
+                    if (paramName === galleryName) {
+                        var key = Object.keys(value);
+
+                        if (key.length == 1) {
+                            var _value = value[key[0]];
+
+                            if ('playVideo' in _value || 'videoUrl' in _value) {
+                                var $params = _this.$body.find('#edit-component-params');
+                                var $curSlide = $params.find('.image-tabs li.active');
+                                var curSlide = params[galleryName][$curSlide.index()];
+
+                                if ('playVideo' in _value) {
+                                    if (_value.playVideo) {
+                                        var src = APP.core2path(curSlide.videoPreview);
+                                    } else {
+                                        var src = APP.core2path(curSlide.image);
+                                    }
+                                    $curSlide.css('background-image', 'url("' + src + '")');
+                                }
+
+                                if ('videoUrl' in _value) {
+                                    _this.downloadVideoPreview(_value.videoUrl).then(function(url) {
+                                        var path = getNewParam(curSlide, $curSlide, url);
+                                        curSlide.videoPreview = path;
+                                        $curSlide.css('background-image', 'url("' + APP.core2path(path) + '")');
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                    return value;
+                });
+            },
+
+            preparedComponentParams: function() {
+                var $componentsParams = APP.$componentsParams;
+                var componentId = APP.$componentsParams.attr('data-component-id');
+                var comp = APP.Core.getComponent(componentId);
+
+                if (comp._name.indexOf('gallery') == 0) {
+                    $('<button class="btn btn-raised btn-primary">Set</button>').on('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }).insertAfter($componentsParams.find('[data-name="videoUrl"]'));
+                }
+            },
+
+            showedComponentParams: function() {
+                var $componentsParams = APP.$componentsParams;
+
+                $componentsParams.find('[data-name="videoUrl"]').on('focus', function(e) {
+                    $componentsParams.find('.image-tabs .images').css({ 'pointer-events': 'none', 'opacity': '0.4' });
+                }).on('blur', function() {
+                    $componentsParams.find('.image-tabs .images').css({ 'pointer-events': 'inherit', 'opacity': '1' });
+                });
+
+                var componentId = APP.$componentsParams.attr('data-component-id');
+                var $component = APP.$template.find('[data-app-component-id=' + componentId + '] > .app-component-content section [mbr-gallery]');
+                var galleryName = $component.attr('mbr-gallery');
+                var params = APP.Core.getComponent(componentId)._params;
+
+                if (APP.Core.getComponent(componentId)._name.indexOf('gallery') == 0) {
+                    $componentsParams.find('input').on('input', function(e) {
+                        e.stopPropagation();
+                    });
+                }
+
+                var images = params[galleryName];
+                var $images = $componentsParams.find('.images li');
+
+                if (images && images.length > 0) {
+                    images.map(function(image, index) {
+                        if (image.playVideo) {
+                            var src = APP.core2path(image.videoPreview);
+                            $images.eq(index).css('background-image', 'url(' + src + ')');
+                        }
+                    });
+                }
+            }
+        }
+    });
+}(jQuery, mbrApp));
+
+//# sourceMappingURL=gallery-video.js.map

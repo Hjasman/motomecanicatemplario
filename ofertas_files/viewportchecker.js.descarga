@@ -1,0 +1,49 @@
+window.addEventListener("load", () => {
+    const options = {
+        rootMargin: '0px',
+        threshold: 0.1
+    };
+
+    const animateValue = (obj, start, end, duration) => {
+        var range = end - start;
+        var minTimer = 50;
+        var stepTime = Math.abs(Math.floor(duration / range));
+        stepTime = Math.max(stepTime, minTimer);
+        var startTime = new Date().getTime();
+        var endTime = startTime + duration;
+        var timer;
+      
+        function run() {
+            var now = new Date().getTime();
+            var remaining = Math.max((endTime - now) / duration, 0);
+            var value = Math.round(end - (remaining * range));
+            obj.innerHTML = value;
+            if (value == end) {
+                clearInterval(timer);
+            }
+        }
+        
+        timer = setInterval(run, stepTime);
+        run();
+    }
+
+    function handleIntersection(entries, observer) {
+        entries.forEach(function (entry) {
+            if (entry.intersectionRatio > 0) {
+                const selector = '#' + entry.target.id + ' .count'
+                entry.target.querySelectorAll(selector).forEach((count) => {
+                    let value = count.innerText.trim();
+                    let counter = (value.length - (value.indexOf(".") + 1)) > 2 ? value.replace(/\./ig, "") : Math.floor(value);
+                    animateValue(count, 0, counter, 3000)
+                })
+            }
+        });
+    }
+
+    const observer = new IntersectionObserver(handleIntersection, options);
+    const counters = document.querySelectorAll('.counters');
+    counters.forEach((counter) => {
+        observer.observe(counter)
+    });
+});
+//# sourceMappingURL=viewportchecker.js.map

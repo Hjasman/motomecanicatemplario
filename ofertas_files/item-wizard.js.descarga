@@ -1,0 +1,1081 @@
+/**
+ * @author Maxim_Djain3 <weremax@yandex.ru>
+ * @description
+ * Include allows add to controls panel in .item>.item-wrapper elements, currently its work with shop, gallery and slider blocks
+ * 1. An edit button has been added to the carousel, allowing you to edit the carousel in gallery mode using the add, move, delete buttons as well as change images
+ * 2. In shop block it adds a add, move, remove, edit buttons. On click edit buttons it open a amp-lightbox with item content. Allow to Change text or image and Save on Close.
+ * After publish changes amp attributes 'on' to correct. In app attributes on work not correct. Its 'light' fixed.
+ * 3. On Gallery block it show only add, move, remove button.
+ */
+'use strict';
+defineM(
+    function($, APP, TR, Bridge) {
+        function detectmob() {
+            if (
+                navigator.userAgent.match(/Android/i) ||
+                navigator.userAgent.match(/webOS/i) ||
+                navigator.userAgent.match(/iPhone/i) ||
+                navigator.userAgent.match(/iPad/i) ||
+                navigator.userAgent.match(/iPod/i) ||
+                navigator.userAgent.match(/BlackBerry/i) ||
+                navigator.userAgent.match(/Windows Phone/i)
+            ) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        /**
+         * Add copy or new Card after current selected items
+         * @param {Number|String} comp - component html
+         * @param {Number|String} itemId - item number in component
+         * @param {String} src - path to new item image src
+         */
+        function addCard(comp, itemId, src) {
+            let themeType = APP.isAMP();
+
+            let $comp = $(APP.getComponentHTML(comp)),
+                items = $comp.find('.item'),
+                carousel = $comp.find('.modal .carousel-item'),
+                dots = themeType ? $comp.find('.dots') : $comp.find('.carousel-indicators li'),
+                preview = $comp.find('.img-prw-wrapper');
+
+            let state = $comp.find('amp-state').attr('id'),
+                slider = $comp.find('amp-carousel').attr('id'),
+                newDots = itemId + 1,
+                newPreview = itemId + 1;
+            if (typeof src === 'string' || !src) {
+                items.each(function(i) {
+                    if (itemId == i) {
+                        let newItem = $(this).clone();
+                        if (src) newItem.find('amp-img').attr('src', src); //amp-only
+                        if (src) newItem.find('img').attr('src', src);
+                        newItem.insertAfter($(this));
+                        if (!themeType) {
+                            newItem.find('img').attr('data-slide-to', ++i);
+                        }
+                    }
+                    else if (!themeType && itemId < i) {
+                        $(items.find('img')[i]).attr('data-slide-to', ++i);
+                    }
+                });
+
+                dots.each(function(i) {
+                    if (itemId == i) {
+                        var newItem = $(this).clone();
+                        if (themeType) {
+                            newItem.find('.dot').attr('data-amp-bind-class', state + '.slide == ' + newDots + ' ? "current" : ""');
+                            newItem.find('.dot').attr('on', 'tap:' + slider + '.goToSlide(index=' + newDots + ')');
+                            newItem.find('.dot').removeClass('current');
+                        } else {
+                            newItem.attr('data-slide-to', newDots)
+                        }
+                        newItem.insertAfter($(this));
+                    } else if (i >= itemId && items.length > 1) {
+                        newDots++;
+                        if (themeType) {
+                            $(this).find('.dot').attr('data-amp-bind-class', state + '.slide == ' + newDots + ' ? "current" : ""')
+                            $(this).find('.dot').attr('on', 'tap:' + slider + '.goToSlide(index=' + newDots + ')')
+                        } else {
+                            $(this).attr('data-slide-to', newDots)
+                        }
+                    }
+                });
+
+                carousel.each(function(i) {
+                    if (itemId == i) {
+                        let newItem = $(this).clone();
+                        if (src) newItem.find('img').attr('src', src);
+                        newItem.insertAfter($(this));
+                        if (!themeType && itemId == 0) newItem.removeClass('active');
+                    }
+                });
+
+                if (APP.isAMP()) {
+                    preview.each(function(i) {
+                        if (itemId == i) {
+                            var newItem = $(this).clone();
+                            if (src) newItem.find('amp-img').attr('src', src);
+                            if (src) newItem.find('img').attr('src', src);
+                            newItem.find('amp-img').attr('data-amp-bind-class', state + '.slide == ' + newPreview + '? "selected":""');
+                            newItem.find('amp-img').attr('on', 'tap:' + slider + '.goToSlide(index=' + newPreview + ')');
+                            newItem.find('amp-img').attr('tabindex', i);
+                            newItem.find('amp-img').removeClass('selected')
+                            newItem.insertAfter($(this));
+                        } else if (i >= itemId && items.length > 1) {
+                            newPreview++;
+                            $(this).find('amp-img').attr('data-amp-bind-class', state + '.slide == ' + newPreview + '? "selected":""')
+                            $(this).find('amp-img').attr('on', 'tap:' + slider + '.goToSlide(index=' + newPreview + ')')
+                            $(this).find('amp-img').attr('tabindex', i)
+                        }
+                    });
+                }
+
+                APP.setComponentHTML(comp, $comp[0].outerHTML);
+            } else if (src.length >= 1) {
+                $(src).each(function(i) {
+                    //items
+                    let newItem = items.eq(itemId).clone();
+                    if (themeType) newItem.find('amp-img').attr('src', src[i]); //amp-only
+                    newItem.find('img').attr('src', src[i]);
+                    newItem.insertAfter(items.eq(itemId));
+                    // items.add(newItem);
+
+                    //dots
+                    let newElDots = dots.eq(itemId).clone();
+                    newElDots.insertAfter(dots.eq(itemId));
+
+                    //carousel
+                    if (newItem.is('.gallery-image')) {
+                        let newElCarousel = carousel.eq(itemId).clone();
+                        newElCarousel.find('img').attr('src', src[i]);
+                        newElCarousel.insertAfter(carousel.eq(itemId));
+                    }
+
+                    // preview in amp theme
+                    let newElPreview = preview.eq(itemId).clone();
+                    newElPreview.find('img').attr('src', src[i])
+                    newElPreview.insertAfter(carousel.eq(itemId));
+
+                    // if (!themeType && itemId == 0) newElCarousel.removeClass('active');
+                    // if last element replace attributes by serial number and save block
+                    if (src.length - 1 === i) {
+                        items = $comp.find('.item');
+                        carousel = $comp.find('.carousel-item');
+                        dots = themeType ? $comp.find('.dots') : $comp.find('.carousel-indicators li');
+                        preview = $comp.find('.img-prw-wrapper');
+
+                        items.each(function(i) {
+                            if (themeType) {
+                                $(this).find('img').attr('data-slide-to', i);
+                            }
+                        })
+
+                        dots.each(function(i) {
+                            if (themeType) {
+                                $(this).find('dot').attr('data-amp-bind-class', state + '.slide == ' + newDots + ' ? "current" : ""');
+                                $(this).find('dot').attr('on', 'tap:' + slider + '.goToSlide(index=' + newDots + ')');
+                                $(this).find('dot').removeClass('current');
+                            } else {
+                                $(this).attr('data-slide-to', i)
+                            }
+                        })
+
+                        if (themeType) {
+                            preview.each(function(i) {
+                                $(this).find('dot').attr('data-amp-bind-class', state + '.slide == ' + newDots + ' ? "current" : ""');
+                                $(this).find('dot').attr('on', 'tap:' + slider + '.goToSlide(index=' + newDots + ')');
+                                $(this).find('dot').removeClass('current');
+                            });
+                        }
+
+                        APP.setComponentHTML(comp, $comp[0].outerHTML);
+
+                        //check loaded images
+                        if (src.length > 1) {
+                            let component = APP.$template.find('[data-app-component-id=' + comp + ']'),
+                                images = component.find('img'),
+                                completedImages = 0;
+
+                            images.each(function() {
+                                $(this).one('load', function() {
+                                    completedImages++;
+                                    APP.progressBar('show', TR('Loading Images'), '', true);
+                                    APP.progressBar(completedImages + ' / ' + images.length);
+                                    APP.progressBar({ progress: (100 / images.length) * completedImages }, '', '', true);
+                                    if (completedImages === images.length) {
+                                        APP.progressBar('hide');
+                                        APP.hidePreloader();
+                                    }
+                                })
+                            });
+                        } else {
+                            APP.hidePreloader();
+                        }
+                    }
+                })
+            }
+            mbrApp.Core.render(comp);
+        }
+
+        function editCard(comp, itemId, media) {
+            let $comp = $(APP.getComponentHTML(comp)),
+                items = $comp.find('.item'),
+                prw = $comp.find('.img-prw-wrapper');
+
+                // Checking links from the slider
+                if(media.image.link === ""){
+                    $comp.find('a img').each(function() {
+                        let src = $(this).attr('src');
+                        if (src === media.image.src) {
+                          $(this).closest('a').attr('href', media.image.link);
+                        }
+                      });
+                }
+
+            items.each(function(i) {
+                if (itemId == i) {
+                    $(this).find('amp-img').attr('src', media.image.src);
+                    $(this).find('img').attr('src', media.image.src);
+
+                    if (media.image.link && !media.image.lightbox) {
+                        if ($(this).find('amp-img a').length) {
+                            $(this).find('amp-img a').attr('href', media.image.link)
+                            $(this).find('amp-img a').attr('target', media.image.linkInNewWindow ? "_target" : "_self")
+                            $(this).find('amp-img').removeAttr('lightbox')
+                            $(this).find('amp-img img').removeAttr('lightbox')
+                        } else {
+                            let link = $('<a>');
+                            link.attr('href', media.image.link);
+                            link.attr('target', media.image.linkInNewWindow);
+                            $(this).find('img').parent().append(link)
+                            link.append($(this).find('img'))
+                        }
+                    } else {
+                        if ($(this).find('amp-img a').length) {
+                            let $tag = $(this).find('amp-img a');
+                            let content = $tag.html();
+                            $tag.parent().append(content)
+                            $tag.remove();
+                        }
+                    }
+
+                    if (media.image.lightbox) {
+                        $(this).find('amp-img').attr('lightbox', media.image.lightbox)
+                        $(this).find('img').attr('lightbox', media.image.lightbox)
+                    } else {
+                        $(this).find('amp-img').removeAttr('lightbox')
+                        $(this).find('img').removeAttr('lightbox')
+                    }
+                }
+            });
+
+            prw.each(function(i) {
+                if (itemId == i) {
+                    $(this).find('amp-img').attr('src', media.image.src)
+                    $(this).find('img.mbr-temp').attr('src', media.image.src)
+                }
+            });
+
+            APP.setComponentHTML(comp, $comp[0].outerHTML);
+            mbrApp.Core.render(comp);
+        }
+        /**
+         * Allows create multiple .items from images getted in showMediaImageDialog
+         * @param {Number|String} comp - component html
+         * @param {Number|String} itemId - item number in component
+         */
+        function createNewCard(comp, itemId) {
+            let $comp = $(APP.getComponentHTML(comp)),
+                items = $comp.find('.item');
+
+            items.each(function(i) {
+                if (itemId == i) {
+                    let curImage = APP.isAMP() ? $(this).find('amp-img') : $(this).find('img');
+                    let img = {
+                        image: {
+                            active: true,
+                            alt: curImage.attr('alt'),
+                            src: curImage.attr('src'),
+                            width: curImage[0].naturalWidth
+                        }
+                    };
+                    APP.showMediaImageDialog(
+                        img,
+                        function(media) {
+                            if (media.image) {
+                                addCard(comp, itemId, media.image.src);
+                            } else if (media.length >= 1) {
+                                media.reverse();
+                                addCard(comp, itemId, media);
+                            }
+                        },
+                        false,
+                        false,
+                        true,
+                        comp
+                    );
+                }
+            });
+        }
+
+        /**
+         * Allows move right current item
+         * @param {Number|String} comp - component html
+         * @param {Number|String} itemId - item number in component
+         */
+        function moveRight(comp, itemId) {
+            let $comp = $(APP.getComponentHTML(comp)),
+                items = $comp.find('.item'),
+                carousel = $comp.find('.modal .carousel-item'),
+                prw = $comp.find('.img-prw-wrapper');
+
+            items.each(function(i) {
+                if (i == itemId) {
+                    itemId == items.length - 1 ? $(this).insertBefore(items.first()) : $(this).insertAfter($(this).next());
+                    if (itemId == items.length - 1 && carousel && !APP.isAMP()) {
+                        $(carousel[i]).insertBefore(carousel.first());
+                        carousel.first().removeClass("active");
+                        carousel.last().addClass("active");
+                    }
+                    else if (carousel && !APP.isAMP()) $(carousel[i]).insertAfter($(carousel[i]).next());
+
+                    if (!APP.isAMP()) {
+                        $(items[itemId]).find('img').attr('data-slide-to', (itemId + 1));
+                        if (itemId != (items.length - 1)) $(items[(itemId + 1)]).find('img').attr('data-slide-to', itemId);
+                    }
+                } else if (!APP.isAMP() && itemId == (items.length - 1)) {
+                    $(items[i]).find('img').attr('data-slide-to', i);
+                }
+            });
+
+            prw.each(function(i) {
+                if (i == itemId) {
+                    itemId == prw.length - 1 ? $(this).insertBefore(prw.first()) : $(this).insertAfter($(this).next());
+                }
+            })
+
+            prw.find('amp-img').each((i, item) => {
+                $(item).attr('on', $(item).attr('on').replace(/\(index=\d+\)/, '(index=' + i + ')'));
+                $(item).attr('data-amp-bind-class', $(item).attr('data-amp-bind-class').replace(/slide == \d+\?/, 'slide == ' + i + '?'));
+                $(item).attr('tabindex', i);
+            })
+
+            APP.setComponentHTML(comp, $comp[0].outerHTML);
+            mbrApp.Core.render(comp);
+        }
+
+        /**
+        * Allows move left current item
+        * @param {Number|String} comp - component html
+        * @param {Number|String} itemId - item number in component
+        */
+        function moveLeft(comp, itemId) {
+            let $comp = $(APP.getComponentHTML(comp)),
+                items = $comp.find('.item'),
+                carousel = $comp.find('.modal .carousel-item'),
+                prw = $comp.find('.img-prw-wrapper');
+
+            items.each(function(i) {
+                if (i == itemId) {
+                    itemId == 0 ? $(this).insertAfter(items.last()) : $(this).insertBefore($(this).prev());
+                    if (itemId == 0 && carousel && !APP.isAMP()) $(carousel[i]).insertAfter(carousel.last());
+                    else if (carousel && !APP.isAMP()) $(carousel[i]).insertBefore($(carousel[i]).prev());
+                    if (itemId < 2 && carousel && !APP.isAMP()) {
+                        carousel.first().removeClass("active");
+                        $(carousel[1]).addClass("active");
+                    }
+
+                    if (!APP.isAMP()) {
+                        if (itemId != 0) $(items[itemId]).find('img').attr('data-slide-to', (itemId - 1));
+                        $(items[(itemId - 1)]).find('img').attr('data-slide-to', itemId);
+                    }
+                } else if (!APP.isAMP() && itemId == 0) {
+                    $(items[i]).find('img').attr('data-slide-to', i);
+                }
+            });
+
+            prw.each(function(i) {
+                if (i == itemId) {
+                    itemId == 0 ? $(this).insertAfter(prw.last()) : $(this).insertBefore($(this).prev());
+                }
+            })
+
+            prw.find('amp-img').each((i, item) => {
+                $(item).attr('on', $(item).attr('on').replace(/\(index=\d+\)/, '(index=' + i + ')'));
+                $(item).attr('data-amp-bind-class', $(item).attr('data-amp-bind-class').replace(/slide == \d+\?/, 'slide == ' + i + '?'));
+                $(item).attr('tabindex', i);
+            })
+            APP.setComponentHTML(comp, $comp[0].outerHTML);
+        }
+
+        /**
+         * Allows remove current item
+         * @param {Number|String} comp - component html
+         * @param {Number|String} itemId - item number in component
+         */
+        function removeCard(comp, itemId) {
+
+            let $comp = $(APP.getComponentHTML(comp)),
+                items = $comp.find('.item'),
+                carousel = $comp.find('.modal .carousel-item'),
+                sliderDots = $comp.find('.dots'),
+                sliderPreview = $comp.find('.img-prw-wrapper'),
+                state = $comp.find('amp-state').attr('id'),
+                slider = $comp.find('amp-carousel').attr('id'),
+                newDots = itemId + 1,
+                newPreview = itemId + 1;
+
+            items.each(function(i) {
+                if (i == itemId && items.length > 1) {
+                    $(this).remove();
+                    if (!APP.isAMP()) {
+                        if (i == 0) $(carousel[1]).addClass("active");
+                        $(carousel[i]).remove();
+                    }
+                }
+                if (items.length <= 1) {
+                    APP.alertDlg(TR('This element is the last. It cannot be removed.'))
+                }
+            });
+
+            if (APP.isAMP()) {
+                sliderDots.each(function(i) {
+                    if (i == itemId && items.length > 1) {
+                        $(this).remove();
+                        newDots--
+                    } else if (i >= itemId && items.length > 1) {
+                        $(this).find('.dot').attr('data-amp-bind-class', state + '.slide == ' + newDots + ' ? "current" : ""')
+                        $(this).find('.dot').attr('on', 'tap:' + slider + '.goToSlide(index=' + newDots + ')')
+                        newDots++;
+                    }
+                })
+            }
+            else if (items.length > 1) $comp.find('.carousel-indicators li').last().remove();
+
+            sliderPreview.each(function(i) {
+                if (i == itemId && items.length > 1) {
+                    $(this).remove();
+                    newPreview--
+                } else if (i >= itemId && items.length > 1) {
+                    $(this).find('amp-img').attr('data-amp-bind-class', state + '.slide == ' + newPreview + '? "selected":""')
+                    $(this).find('amp-img').attr('on', 'tap:' + slider + '.goToSlide(index=' + newPreview + ')')
+                    $(this).find('amp-img').attr('tabindex', newPreview)
+                    newPreview++
+                }
+            })
+
+            APP.setComponentHTML(comp, $comp[0].outerHTML);
+            mbrApp.Core.render(comp);
+        }
+
+        /**
+         * function to display a little controls menu by event target
+         * to display it need add class .item > .item-wrapper on your "card"
+         * @param {Event} e - mouse enter event on .item
+         */
+        function showControls(e) {
+            if ($(e.currentTarget).is('.item')) {
+                let $item = $(e.currentTarget).find('.item-wrapper'),
+                    $overlay = $('<div class="item-menu-overlay">'),
+                    comp_id = $(e.target).parents('.app-component').attr('data-app-component-id'),
+                    ctrl_panel = $('<div class="btn-wrapper">'),
+                    itemId;
+                // set current itemId
+                $(e.currentTarget).parent().parent().find('.item').each(function(i) {
+                    if (e.currentTarget == this) itemId = i;
+                });
+
+                let $remove = $('<span class="mbr-icon-trash ctrl-btn"><span class="tooltiptext">' + TR('Remove') + '</span></span>').click((e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removeCard(comp_id, itemId)
+                }),
+                    $copy = $('<span class="mbr-icon-plus ctrl-btn"><span class="tooltiptext">' + TR('Add Copy') + '</span></span>').click((e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        addCard(comp_id, itemId)
+                    }),
+                    $new = $('<span class="mbr-icon-plus ctrl-btn"><span class="tooltiptext">' + TR('Add Items') + '</span></span>').click((e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        createNewCard(comp_id, itemId)
+                    }),
+                    $right = $('<span class="mbr-icon-arrow-right ctrl-btn"><span class="tooltiptext">' + TR('Move Right') + '</span></span>').click((e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        moveRight(comp_id, itemId)
+                    }),
+                    $left = $('<span class="mbr-icon-arrow-left ctrl-btn"><span class="tooltiptext">' + TR('Move Left') + '</span></span>').click((e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        moveLeft(comp_id, itemId)
+                    });
+
+                // if current target is shop-item
+                if ($(e.currentTarget).is('.item.shop-image')) {
+                    let $edit = $('<span class="mbr-icon-pencil ctrl-btn"><span class="tooltiptext">' + TR('Edit') + '</span></span>').click((e) => openItemWindow(e, comp_id, itemId));
+                    $overlay.append(ctrl_panel.append($edit).append($left).append($right).append($remove).append($copy)); // add new works
+                    $overlay.click((e) => openItemWindow(e, comp_id, itemId))
+                }
+
+                if ($(e.currentTarget).is('.item.shop-image')) {
+                    $(e.currentTarget).find('.item-menu-overlay').click((e) => openItemWindow(e, comp_id, itemId));
+                }
+                // features
+                if ($(e.currentTarget).is('.item.features-image')) {
+                    $overlay.append(ctrl_panel.append($left).append($right).append($remove).append($new));
+                }
+                // features
+                if ($(e.currentTarget).is('.item.features-without-image')) {
+                    $overlay.append(ctrl_panel.append($left).append($right).append($remove).append($copy));
+                }
+                // if current target is gallery image
+                if ($(e.currentTarget).is('.item.gallery-image')) {
+                    $overlay.append(ctrl_panel.append($left).append($right).append($remove).append($new)); // add copy works
+                }
+
+                // current target is slider image
+                if ($(e.currentTarget).is('.item.slider-image')) {
+                    // let $edit = $('<span class="mbr-icon-pencil ctrl-btn"><span class="tooltiptext">' + TR('Edit Slides') + '</span></span>').click((e) => createSliderGallery(comp_id));
+                    $overlay.click((e) => createSliderGallery(comp_id, itemId));
+                    // .append(ctrl_panel.append($edit).append($remove)); to display ctrl panel
+                }
+
+                if ($item.find('.item-menu-overlay').length === 0) $item.append($overlay);
+
+                $overlay.fadeTo(200, 1);
+
+                $(e.currentTarget).one('mouseleave', function() {
+                    $overlay.fadeTo(200, 0, function() {
+                        $($overlay).remove();
+                    });
+                });
+            }
+        }
+
+        /**
+         * Allows display showDialog gallery builded on carousel images.
+         * Includes some controls to edit.
+         * Saved to component after editing.
+         * @param {String|Number} comp_id - curently selected component id
+         */
+        function createSliderGallery(comp_id) {
+            let addonPath = APP.getAddonDir(APP.theme.name);
+
+            let images = $(APP.getComponentHTML(comp_id)).find('img').each(function() {
+                if ($(this).attr('src').search('../../') === 0) {
+                    $(this).attr('src', $(this).attr('src').replace('../../', ''));
+                } else if ($(this).attr('src').search('../') === 0) {
+                    $(this).attr('src', Bridge.path2app(addonPath) + '/components' + $(this).attr('src').replace('..', ''))
+                } else {
+                    $(this).attr('src', $(this).attr('src').replace(APP.path2core(addonPath), Bridge.path2app(addonPath)))
+                }
+            })
+
+            let galleryHtml = $('<div class="row">'),
+                image = $('<div class="col-md-4 item"><div class="item-wrapper"><img>');
+
+            images.each(function() {
+                let img = image.clone();
+
+                img.find('img').attr('src', $(this).attr('src'));
+                img.find('img').attr('data-text', $(this).find('span').html());
+
+                if ($(this).find('a')) {
+                    img.find('img').attr('data-link', $(this).parent().attr('href'))
+                    img.find('img').attr('data-window', $(this).find('a').attr('target') == 'target' ? true : false)
+                }
+
+                if ($(this).attr('lightbox')) {
+                    img.find('img').attr('data-lb', $(this).attr('lightbox'))
+                }
+
+                galleryHtml.append(img);
+            });
+
+            let slides = APP.showDialog({
+                title: TR('Slides'),
+                size: 'large',
+                className: 'note-air-layout item-wizard-slides',
+                body: '<div class="gallery-wrapper">' + galleryHtml[0].outerHTML,
+                successLabel: 'Ok',
+                success: function() { }
+            });
+
+            showCarouselControls(slides, comp_id);
+            showMediaDialog(slides, comp_id);
+        }
+
+        /**
+         * Adds event on click, to allows changes image in showDialog Gallery after his open
+         * @param {Node} modal - image or modal with images in body
+         */
+        function showMediaDialog(modal, comp_id) {
+            let images = modal.is('img') ? modal : $(modal).find('img');
+            let itemId;
+            images.on('click', (e) => {
+                for (var i = 0; i < images.length; i++) {
+                    if (e.currentTarget == images[i]) {
+                        itemId = i
+                    }
+                }
+                addNewCard(e.currentTarget, false, comp_id, itemId, true);
+            });
+        }
+
+        /**
+         * Adds a event on mouseover node which applies Carousel Control menu to add, move or delete items in carousel gallery
+         * @param {Node} slides - modal or .item-wrapper node
+         */
+        function showCarouselControls(slides, comp_id) {
+            let items = $(slides).is('.item-wrapper') ? $(slides) : $(slides).find('.item-wrapper');
+            let itemId;
+
+            items.on('mouseenter', function(e) {
+                let $item = $(e.currentTarget),
+                    $overlay = $('<div class="item-menu-overlay">'),
+                    $ctrl_panel = $('<div class="btn-wrapper">');
+
+                var dialogItems = $item.parents('.row').find('.item');
+
+                dialogItems.each(function(i, item) {
+                    if ($(item).has($item).length !== 0) {
+                        itemId = i;
+                    }
+                });
+
+                let $remove = $('<span class="mbr-icon-trash ctrl-btn"><span class="tooltiptext">' + TR('Remove') + '</span></span>').click((e) => removeGalleryCard(e, comp_id, itemId)),
+                    $new = $('<span class="mbr-icon-plus ctrl-btn"><span class="tooltiptext">' + TR('Add Items') + '</span></span>').click((e) =>
+                        addNewCard(e.currentTarget, true, comp_id, itemId)
+                    ),
+                    $right = $('<span class="mbr-icon-arrow-right ctrl-btn"><span class="tooltiptext">' + TR('Move Right') + '</span></span>').click((e) => moveGalleryCardRight(e, comp_id, itemId)),
+                    $left = $('<span class="mbr-icon-arrow-left ctrl-btn"><span class="tooltiptext">' + TR('Move Left') + '</span></span>').click((e) => moveGalleryCardLeft(e, comp_id, itemId));
+
+                $overlay.append($ctrl_panel.append($left).append($right).append($remove).append($new)); // copy works
+                if ($item.find('.item-menu-overlay').length == 0) $item.append($overlay);
+
+                $overlay.fadeTo(200, 1);
+
+                $item.one('mouseleave', function() {
+                    $overlay.fadeTo(200, 0, function() {
+                        $($overlay).remove();
+                    });
+                });
+            });
+        }
+        /**
+         * Allow add multiple 'images' to carousel gallery getted from showMediaImageDialog
+         * @param {Node} node - currently selected item
+         * @param {Boolean} multi - 'true' or 'false' allow multiple images load
+         */
+        function addNewCard(node, multi, comp_id, itemId, lb) {
+            let curImage = $(node).parents('.item').find('img');
+
+            let img = {
+                image: {
+                    active: true,
+                    alt: curImage.attr('alt'),
+                    src: Bridge.path2app(Bridge.path2app(curImage.attr('src'))),
+                    width: curImage[0].naturalWidth
+                }
+            };
+
+            if ($(node).attr('data-link')) {
+                img.image.link = $(node).attr('data-link')
+                img.image.linkInNewWindow = $(node).attr('data-window')
+                img.image.lightbox = false;
+            }
+
+            if ($(node).attr('data-lb')) {
+                img.image.lightbox = true
+            }
+
+            APP.showMediaImageDialog(
+                img,
+                function(media) {
+                    if (media.image) {
+                        if (!multi) {
+                            editGalleryCard(curImage[0], media, comp_id, itemId, lb);
+                        } else if (multi) {
+                            addGalleryCard(curImage[0], media.image.src, comp_id, itemId);
+                        }
+                    } else if (media.length >= 1) {
+                        media.reverse();
+                        addGalleryCard(curImage[0], media, comp_id, itemId);
+                    }
+                },
+                false,
+                false,
+                multi, comp_id, lb
+            );
+        }
+
+        function editGalleryCard(node, media, comp_id, itemId) {
+
+            let item = $(node).parents('.item');
+
+            item.find('img').attr('src', media.image.src);
+
+            if (media.image.link) {
+                item.find('img').attr('data-link', media.image.link)
+                item.find('img').attr('data-window', media.image.linkInNewWindow)
+            } else {
+                item.find('img').removeAttr('data-link')
+                item.find('img').removeAttr('data-window')
+            }
+
+            if (media.image.lightbox) {
+                item.find('img').attr('data-lb', media.image.lightbox)
+            } else {
+                item.find('img').removeAttr('data-lb')
+            }
+
+            editCard(comp_id, itemId, media);
+        }
+        /**
+         * Adds new gallery .item
+         * @param {Node} node - currently selected .item
+         * @param {*} src - path to new image
+         */
+        function addGalleryCard(node, src, comp_id, itemId) {
+            let item = $(node).parents('.item');
+
+            if (typeof src === "string") {
+                let newItem = item.clone();
+                newItem.find('img').attr('src', src);
+                showCarouselControls(newItem, comp_id, itemId);
+                showMediaDialog(newItem.find('img'));
+                newItem.find('.item-menu-overlay').remove();
+                newItem.insertAfter(item);
+            } else if (src.length >= 1) {
+                let newItems = [];
+                $(src).each(function(i) {
+                    let newItem = item.clone();
+                    newItem.find('img').attr('src', src[i]);
+
+                    showCarouselControls(newItem, comp_id, itemId);
+                    showMediaDialog(newItem.find('img'));
+
+                    newItem.find('.item-menu-overlay').remove();
+                    newItems.push(newItem);
+                })
+                if (newItems.length) item.after(newItems)
+            }
+            addCard(comp_id, itemId, src);
+        }
+
+        function removeGalleryCard(e, comp_id, itemId) {
+            let item = $(e.target).parents('.item'),
+                items = item.parent().find('.item');
+            if (items.length <= 1) APP.alertDlg('This element is the last. It cannot be removed.');
+            else item.remove();
+            removeCard(comp_id, itemId);
+        }
+
+        function moveGalleryCardRight(e, comp_id, itemId) {
+            let item = $(e.target).parents('.item'),
+                parents = $(e.target).parents().find('.item');
+            parents.each(function(i, it) {
+                if (item[0] == it) {
+                    if (i == parents.length - 1) {
+                        item.insertBefore(parents.first());
+                    } else {
+                        item.insertAfter(item.next());
+                    }
+                }
+            });
+            moveRight(comp_id, itemId);
+        }
+
+        function moveGalleryCardLeft(e, comp_id, itemId) {
+            let item = $(e.target).parents('.item'),
+                parents = $(e.target).parents().find('.item');
+            parents.each(function(i, it) {
+                if (item[0] == it) {
+                    if (i == 0) {
+                        item.insertAfter(parents.last());
+                    } else {
+                        item.insertBefore(item.prev());
+                    }
+                }
+            });
+            moveLeft(comp_id, itemId);
+        }
+
+        /**
+         * Open amp-lightbox after click on edit btn in mini controlbar or .item
+         * @param {Event} e - click event on .item .btn-edit
+         * @param {Number} comp_id - component id
+         * @param {Number} itemId - .item number in current component
+         */
+        function openItemWindow(e, comp_id, itemId) {
+            let lightbox = $(e.currentTarget).parents('.item').parent().find('amp-lightbox');
+
+            lightbox.each(function(i) {
+                if (i == itemId) {
+                    $(this).removeAttr('hidden');
+                    $(this).find('div.placeholder').attr('hidden', true);
+                }
+            });
+
+            lightbox.find('.close').click(function(e) {
+                let comp = $(APP.getComponentHTML(comp_id)),
+                    compLb = comp.find('amp-lightbox'),
+                    compImg = comp.find('.item-wrapper amp-img'),
+                    compIw = comp.find('.item-wrapper');
+
+                compLb.each(function(i, itemi) {
+                    compImg.each(function(n) {
+                        if (itemId == i && i == n) {
+                            var h = $(itemi).find('amp-img img.mbr-temp')[0].naturalHeight,
+                                w = $(itemi).find('amp-img img.mbr-temp')[0].naturalWidth;
+                            if (!h || !w) {
+                                h = 9;
+                                w = 16;
+                            }
+                            $(this).attr('src', $(itemi).find('amp-img img').attr('src'));
+                            $(this).attr('alt', $(itemi).find('amp-img').attr('alt'));
+                            $(this).attr('height', h);
+                            $(this).attr('width', w);
+                            $(this).find('img').attr('src', $(itemi).find('amp-img img').attr('src'));
+                        }
+                    });
+
+                    compIw.each(function(n) {
+                        if (itemId == i && i == n) {
+                            $(this).find('.item-title').html($(itemi).find('.item-box-title').html());
+                            $(this).find('.cur').html($(itemi).find('.cur').html());
+                            $(this).find('.item-price').html($(itemi).find('.item-box-price').html());
+                            $(this).find('.item-text').html($(itemi).find('.item-box-text').html());
+                            $(this).find('a.btn').html($(itemi).find('a.btn').html());
+                            if ($(itemi).find('a.btn').attr('href')) $(this).find('a.btn').attr('href', $(itemi).find('a.btn').attr('href'));
+                        }
+                    });
+                });
+
+                lightbox.attr('hidden', true);
+                lightbox.find('div.placeholder').removeAttr('hidden');
+
+                APP.setComponentHTML(comp_id, comp[0].outerHTML);
+            });
+        }
+
+        APP.addCoreResource('./app/includes/item-wizard.css');
+        APP.addAppResource('./app/includes/item-wizard.css');
+
+        APP.regExtension({
+            name: 'item-wizard',
+            events: {
+                load: function() {
+                    if (detectmob()) {
+                        APP.$template.on('touchstart', '.item', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            showControls(e);
+                        });
+                    } else {
+                        APP.$template.on('mouseenter', '.item', function(e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            showControls(e);
+                        });
+                    }
+                    //to change amp attrs on amp-lightbox in section.amp-shop
+                    APP.Core.on('loadedComponent', function(component, page, context, publish) {
+
+                        if (APP.isAMP()) { //wtf
+                            var $section = $(context).find('[data-app-component-id=' + component._id + ']');
+
+                            var bulletsArr = $section.find('.dots-wrapper span');
+
+                            // on dots click in app
+                            for (let i = 0; i < bulletsArr.length; i++) {
+                                $(bulletsArr[i]).on('click', function(e) {
+
+                                    var slides = $section.find('.i-amphtml-slide-item');
+                                    var ampSlidesArr = $section.find('.amp-lightbox-carousel amp-carousel .i-amphtml-slides-container > div');
+
+                                    ampSlidesArr.each(function() {
+                                        $(this).addClass('hidden-slide').removeClass('visible-slide');
+                                    });
+
+                                    var dotIndex = bulletsArr.index(e.target);
+                                    $(ampSlidesArr[dotIndex]).addClass('visible-slide').removeClass('hidden-slide');
+
+                                    bulletsArr.each(function(idx) {
+                                        $(this).removeClass('current');
+                                    });
+                                    $(this).addClass('current');
+                                });
+                            }
+
+                            // on arrow click in app
+                            var btnNext = $section.find('.amp-lightbox-carousel amp-carousel .amp-carousel-button-next'),
+                                btnPrev = $section.find('.amp-lightbox-carousel amp-carousel .amp-carousel-button-prev');
+
+                            btnNext.click((e) => {
+                                let slides = $section.find('.i-amphtml-slide-item'),
+                                    slidesCount = slides.length,
+                                    dots = $section.find('.dot'),
+                                    previews = $section.find('.preview-wrapper amp-img');
+
+                                slides.each((i, item) => {
+                                    if ($(item).is('.visible-slide, .hidden-slide')) {
+                                        $(item).removeClass('visible-slide').removeClass('hidden-slide')
+                                    }
+                                    let curSlide = $(item).attr('style'),
+                                        newSlide = curSlide.replace(/\d/, function(str) {
+                                            str = parseInt(str, 10) + 1
+                                            return str;
+                                        });
+
+                                    if (parseInt(newSlide.match(/\d/), 10) > slidesCount) {
+                                        newSlide = 1
+                                    } else if (parseInt(newSlide.match(/\d/), 10) < 1) {
+                                        newSlide = slidesCount
+                                    }
+
+                                    $(this).attr('style', newSlide);
+                                });
+
+                                previews.each((i, item) => {
+                                    $(item).removeClass('selected')
+                                })
+                                dots.each((i, item) => {
+                                    $(item).removeClass('current')
+                                })
+
+                                for (i = 0; i < slidesCount; i++) {
+                                    if ($(slides[i]).find('[aria-hidden="false"]').length) {
+
+                                        let selectedSlide = 1;
+
+                                        if ((i + 2) > slidesCount) {
+                                            selectedSlide = 1
+                                        } else {
+                                            selectedSlide = i + 2
+                                        }
+                                        $(dots[selectedSlide - 1]).addClass('current')
+                                        $(previews[selectedSlide - 1]).addClass('selected')
+                                    }
+                                }
+                            })
+
+                            btnPrev.click((e) => {
+                                let slides = $section.find('.i-amphtml-slide-item'),
+                                    slidesCount = slides.length,
+                                    dots = $section.find('.dot'),
+                                    previews = $section.find('.preview-wrapper amp-img');
+
+                                slides.each((i, item) => {
+                                    if ($(item).is('.visible-slide, .hidden-slide')) {
+                                        $(item).removeClass('visible-slide').removeClass('hidden-slide')
+                                    }
+                                    let curSlide = $(item).attr('style'),
+                                        newSlide = curSlide.replace(/\d/, function(str) {
+                                            str = parseInt(str, 10) - 1
+                                            return str;
+                                        });
+                                    if (parseInt(newSlide.match(/\d/), 10) > slidesCount) {
+                                        newSlide = 1
+                                    } else if (parseInt(newSlide.match(/\d/), 10) < 1) {
+                                        newSlide = slidesCount
+                                    }
+                                    $(this).attr('style', newSlide);
+                                });
+
+                                previews.each((i, item) => {
+                                    $(item).removeClass('selected')
+                                })
+                                dots.each((i, item) => {
+                                    $(item).removeClass('current')
+                                })
+
+                                for (i = 0; i < slides.length; i++) {
+                                    if ($(slides[i]).find('[aria-hidden="false"]').length) {
+
+                                        let selectedSlide = 1;
+                                        if ((i - 1) < 0) {
+                                            selectedSlide = slides.length
+                                        } else {
+                                            selectedSlide = i
+                                        }
+                                        $(dots[selectedSlide - 1]).addClass('current')
+                                        $(previews[selectedSlide - 1]).addClass('selected')
+                                    }
+                                }
+                            })
+
+                            // on preview image click in app
+                            var previewArr = $section.find('.preview-wrapper amp-img');
+                            var slides = $section.find('.i-amphtml-slide-item');
+
+                            for (var i = 0; i < previewArr.length; i++) {
+                                $(previewArr[i]).on('click', function(e) {
+                                    slides.each((i, item) => {
+                                        if ($(item).is('.visible-slide, .hidden-slide')) {
+                                            $(item).removeClass('visible-slide').removeClass('hidden-slide')
+                                        }
+                                    })
+                                    previewArr.each(function() {
+                                        $(this).removeClass('selected');
+                                    });
+                                    $(this).addClass('selected');
+                                });
+                            }
+                        }
+                        if (publish) {
+                            if (APP.isAMP()) {
+                                context.find('section .amp-shop').each(function(n) {
+                                    let $ampshop = $(this),
+                                        $items = $ampshop.find('.item');
+
+                                    $items.each(function(i) {
+                                        let reg = /\:((.*?)(?:-(\d)-(\d))?)(?:$|\.)/;
+                                        let itemName = $(this).attr('on').match(reg)[1];
+                                        let itemAttrOn = $(this).attr('on').match(reg)[2];
+
+                                        $(this).attr('on', 'tap:' + itemAttrOn + '-' + n + '-' + i);
+                                        $(this).find('amp-lightbox').attr('id', itemAttrOn + '-' + n + '-' + i);
+                                        $(this).find('button.close').attr('on', 'tap:' + itemAttrOn + '-' + n + '-' + i + '.close');
+                                    });
+                                });
+
+                                context.find('section.amp-lightbox-carousel').each(function(i, item) {
+                                    var $carousel = $(item).find('amp-carousel'),
+                                        $slides = $carousel.find('.img-prw-wrapper amp-img');
+                                    $slides.each(function(n) {
+                                        $(this).attr('data-amp-bind-class', $(this).attr('data-amp-bind-class').replace(/== \d+ \?|==\d+\?/gm, '== ' + n + ' ?'))
+                                        $(this).attr('tabindex', n)
+                                        $(this).attr('on', $(this).attr('on').replace(/index=\d+/gm, 'index=' + n))
+                                    })
+                                })
+                            } else {
+                                let galleries = context.find('section .mbr-gallery').parent();
+
+                                if (galleries.length) {
+                                    galleries.each((i, item) => {
+                                        let modalId = APP.getUID(3, { timePrefix: true }),
+                                            carouselId = APP.getUID(3, { timePrefix: true });
+
+                                        let images = [];
+
+                                        // $(item).find('.row[data-target]').attr('data-target', '#' + modalId);
+
+                                        $(item).find('.row img').each((n, image) => {
+                                            $(image)
+                                                // .attr('data-target', '#' + carouselId)
+                                                .attr('data-slide-to', n);
+                                            let newsrc = ((image.src).indexOf(Bridge.base) === 0 ? (image.src).replace(Bridge.base, '../../') : image.src)
+                                            images.push(newsrc);
+                                        })
+
+                                        // $(item).find('.modal').attr('id', modalId);
+
+                                        // $(item).find('.carousel').attr('id', carouselId);
+                                        $(item).find('.carousel img').each((n, image) => { //todo: change image in project on add, move or remove card
+                                            $(image).attr('src', images.shift());
+                                        })
+
+                                        $(item).find('.carousel li').each((n, slide) => {
+                                            $(slide)
+                                                // .attr('data-target', '#' + carouselId)
+                                                .attr('data-slide-to', n);
+                                        })
+
+                                        // $(item).find('.carousel a.carousel-control-prev, .carousel a.carousel-control-next').attr('href', '#' + carouselId);
+                                    })
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    },
+    ['jQuery', 'mbrApp', 'TR()', 'Bridge']
+);
+
+//# sourceMappingURL=item-wizard.js.map

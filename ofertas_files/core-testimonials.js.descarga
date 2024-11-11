@@ -1,0 +1,55 @@
+(function($, CORE) {
+    'use strict';
+
+    CORE.regExtension({
+        name: 'core-testimonials',
+        global: {
+            setTestimonials: function(component) {
+                var $testimonials = $('[data-app-component-id=' + component._id + '] > .app-component-content .mbr-testimonials-list');
+
+                if ($testimonials.length !== 0) {
+                    var items = component.items;
+                    var defaultItem = component.defaultItem;
+
+                    component.testimonial = component.testimonial || [];
+
+                    var testimonials = [];
+
+                    for (var i = 0; i < component._params.testimonialsCount; i++) {
+                        testimonials[i] = component.testimonial[i] || $.extend(true, {}, defaultItem, items[i] || {});
+                    }
+
+                    component.testimonial = testimonials;
+
+                    $testimonials.find('.mbr-testimonial [mbr-media]').on('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        var testimonialIndex = $(this).closest('.mbr-testimonial').index();
+                        var item = component.testimonial[testimonialIndex];
+
+                        var media = $.extend(true, {}, item.media);
+
+                        function saveMedia(media) {
+                            item.media = media;
+                            CORE.updateGlobalComponents(component._id);
+                        }
+
+                        CORE.APP.showMediaImageDialog(media, saveMedia);
+                    }).each(function(index, el) {
+                        $(el).attr('click-attached', 'true');
+                    });
+                }
+            }
+        },
+        events: {
+            loadedComponent: function(component, page, context, publish) {
+                if (!publish) {
+                    this.setTestimonials(component);
+                }
+            }
+        }
+    });
+}(jQuery, mbrAppCore));
+
+//# sourceMappingURL=core-testimonials.js.map

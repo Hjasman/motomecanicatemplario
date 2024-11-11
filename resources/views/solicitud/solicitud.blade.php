@@ -5,6 +5,9 @@
 @section('content_header')
     <h1>Solicitud de Servicios</h1>
 @stop
+@section('content_header')
+    <h1>Solicitud de Servicios</h1>
+@stop
 
 @section('content')
 
@@ -42,11 +45,13 @@
                         
                     </form>
             @stop
+                       
                       
             @section('css')
                     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.6/css/dataTables.bootstrap5.css">
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
             @endsection
+            @section('js')
                     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
                     <script src="https://cdn.datatables.net/2.1.6/js/dataTables.js"></script>
@@ -55,17 +60,19 @@
                    
                    
                         
-                    @if (session('actual')=='ook')
-                    <script>
-                    Swal.fire({
-                    icon: "success",
-                    title: "Numero no encontrado!",
-                    title: "Error",
-                    showConfirmButton: false,
-                    timer: 1500
-                    });
-                    </script>
-                @endif
+            @if (session('actuali')=='ok')
+            <script>
+                Swal.fire({
+                icon: "error",
+                title: "Error",
+                title: "Numero no Encontrado",
+                showConfirmButton: false,
+                timer: 2000
+                });
+                </script>
+            @endif
+            @stop
+
                      
                  
                     
